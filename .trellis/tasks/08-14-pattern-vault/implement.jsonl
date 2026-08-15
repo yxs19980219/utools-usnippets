@@ -1,0 +1,9 @@
+{"file": ".trellis/tasks/08-14-pattern-vault/prd.md", "reason": "需求、范围、验收标准（10 条 AC），实现必须逐条满足"}
+{"file": ".trellis/tasks/08-14-pattern-vault/design.md", "reason": "技术设计：架构边界、数据模型、模块划分、CM6/附件/搜索/自动保存/内核兼容等关键技术点"}
+{"file": ".trellis/tasks/08-14-pattern-vault/design-tokens.css", "reason": "用户确认的设计 Token（Tailwind v4，oklch，深色 .dark）"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "前端目录结构规范（组件/状态/工具分层）"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "React 组件编写规范"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Zustand 状态管理规范"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "前端代码质量要求"}
+{"file": "C:/Users/Fengzhi/.agents/skills/utools-dev/references/utools-api.md", "reason": "uTools API 唯一依据（db/附件/窗口/深色/事件），preload 与数据层实现必须查证"}
+{"file": "C:/Users/Fengzhi/.agents/skills/utools-dev/SKILL.md", "reason": "uTools 插件开发规范：plugin.json、preload 铁律、utools.db 红线、dev/build 双模式、Lightning CSS 降级"}

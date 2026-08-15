@@ -1,0 +1,4 @@
+{"file": ".trellis/tasks/08-14-pattern-vault/prd.md", "reason": "验收标准（10 条 AC）与范围，check 逐条核对"}
+{"file": ".trellis/tasks/08-14-pattern-vault/design.md", "reason": "设计契约：模块划分、数据流、关键实现点，check 对照实现是否偏离"}
+{"file": "C:/Users/Fengzhi/.agents/skills/utools-dev/SKILL.md", "reason": "uTools 合规检查：preload CommonJS、db 红线、发布版无 development、无外部网络资源"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "前端质量要求与类型安全核对"}
