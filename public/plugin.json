@@ -1,0 +1,19 @@
+{
+  "main": "index.html",
+  "logo": "logo.png",
+  "preload": "preload/services.js",
+  "pluginSetting": {
+    "single": true,
+    "height": 600
+  },
+  "development": {
+    "main": "http://localhost:5175"
+  },
+  "features": [
+    {
+      "code": "pattern-vault",
+      "explain": "面向开发者的模式库：场景 → 解法，沉淀可复制的代码片段与可阅读的笔记",
+      "cmds": ["模式库", "Pattern Vault"]
+    }
+  ]
+}
