@@ -225,3 +225,41 @@
 .cm-editor.cm-vault-dark {
   background: var(--card);
 }
+
+/* atomic 编辑器：输入行无背景（一期 .cm-editor .cm-activeLine 规则不适用） */
+.atomic-cm-editor.cm-editor .cm-activeLine,
+.atomic-cm-editor.cm-editor .cm-activeLineGutter {
+  background: transparent;
+}
+
+/* ---- 二期：atomic 编辑器（Obsidian 式即时渲染）----
+ * 主题走 atomic 内置两套：无 data-theme = 暗色默认；[data-theme="light"] = 浅色。
+ * 1. CM6 内置搜索面板在深色下跟随项目主题（atomic 默认面板背景不适用）
+ * 2. @supports 兜底：atomic CSS 含 var() 的裸 color-mix（Chrome 88 不支持，
+ *    声明被忽略），用固定 rgba 近似还原（影响：==高亮/链接图标/任务框 focus） */
+.atomic-cm-editor .cm-panels {
+  background: var(--card);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+.atomic-cm-editor .cm-panels input,
+.atomic-cm-editor .cm-panels button {
+  font: inherit;
+}
+
+@supports not (color: color-mix(in srgb, red, red)) {
+  .atomic-cm-editor .cm-atomic-highlight {
+    background: rgba(167, 139, 250, 0.2);
+  }
+  .atomic-cm-editor .cm-atomic-link::after,
+  .atomic-cm-editor .cm-atomic-link-icon {
+    background-color: #818cf8;
+  }
+  .atomic-cm-editor .cm-atomic-link:hover::after,
+  .atomic-cm-editor .cm-atomic-link-icon:hover {
+    background-color: #a5b4fc;
+  }
+  .atomic-cm-editor .cm-atomic-task-checkbox:focus-visible {
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.28);
+  }
+}

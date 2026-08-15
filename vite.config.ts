@@ -42,6 +42,8 @@ export default defineConfig({
     },
   },
   build: {
+    // uTools 3 内核 Chrome 88：显式 JS 转译目标（一期 CSS 已用 lightningcss chrome88）
+    target: 'chrome88',
     // lightningcss minify 对 Tailwind 4 输出有兼容 bug（Invalid empty selector），
     // 关闭 minify 只保留降级转译（产物略大，功能不受影响）
     cssMinify: false,

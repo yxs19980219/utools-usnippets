@@ -9,7 +9,9 @@
  */
 import { useMemo, useState } from 'react'
 import {
+  BookOpenIcon,
   CopyIcon,
+  FileCode2Icon,
   FileImageIcon,
   FolderInputIcon,
   MoreHorizontalIcon,
@@ -49,6 +51,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 
 /** 按左栏导航视图过滤记录（排除/只含回收站） */
@@ -139,6 +147,11 @@ function ListItem({
             )}
           >
             <div className="flex items-center gap-1.5">
+              {meta.isNote ? (
+                <BookOpenIcon className="size-3 shrink-0 text-muted-foreground" />
+              ) : (
+                <FileCode2Icon className="size-3 shrink-0 text-muted-foreground" />
+              )}
               <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
                 {record.title || '未命名'}
               </span>
@@ -148,8 +161,20 @@ function ListItem({
                 {firstLine(record.scenario)}
               </span>
             )}
-            <span className="absolute top-1 right-1 rounded-sm bg-background/80 px-1 py-px font-mono text-[10px] text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
-              {meta.badge}
+            <span className="absolute top-1 right-1 flex items-center gap-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleCopy()
+                }}
+                className="rounded-sm p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-accent-foreground group-hover:opacity-100"
+                title="复制全文"
+              >
+                <CopyIcon className="size-3" />
+              </button>
+              <span className="rounded-sm bg-background/80 px-1 py-px font-mono text-[10px] text-muted-foreground">
+                {meta.badge}
+              </span>
             </span>
           </div>
         </ContextMenuTrigger>
@@ -266,8 +291,8 @@ export function ListPane() {
     return sortByRecent(inView)
   }, [records, view, searchQuery])
 
-  const handleNew = async () => {
-    const record = await createRecord()
+  const handleNew = async (kind: 'snippet' | 'note') => {
+    const record = await createRecord(kind)
     if (record) {
       setSelected(record._id)
       setActiveFragment(record.fragments[0]?.id ?? null)
@@ -313,15 +338,28 @@ export function ListPane() {
       <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
         {viewLabel(view, list.length, categoryName)}
       </span>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-6 shrink-0"
-        onClick={() => void handleNew()}
-        title="新建空白记录（默认一个 js 片段）"
-      >
-        <PlusIcon className="size-3.5" />
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-6 shrink-0"
+            title="新建"
+          >
+            <PlusIcon className="size-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-28">
+          <DropdownMenuItem onSelect={() => void handleNew('snippet')}>
+            <FileCode2Icon className="size-3.5" />
+            片段
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => void handleNew('note')}>
+            <BookOpenIcon className="size-3.5" />
+            笔记
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 

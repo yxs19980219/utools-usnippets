@@ -8,7 +8,7 @@
  * - 标题/备注/标签/正文变更 → 防抖 1s 自动落库
  * - markdown tab 粘贴图片 → 附件落库 → 光标处插入 ![](att://<id>)
  */
-import { useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useMemo, useRef, useState } from 'react'
 import { CopyIcon, PanelLeftIcon, PlusIcon, TypeIcon } from 'lucide-react'
 import type { Fragment } from '@/types'
 import { copyText } from '@/lib/clipboard'
@@ -16,10 +16,21 @@ import { useToast } from '@/lib/toast'
 import { useRecords } from '@/stores/records'
 import { useUi } from '@/stores/ui'
 import { Button } from '@/components/ui/button'
-import { CodeBlock, type CodeBlockHandle } from '@/components/editor/CodeBlock'
+import { CodeBlock } from '@/components/editor/CodeBlock'
 import { FragmentTabs } from '@/components/editor/FragmentTabs'
 import { StatusBar } from '@/components/editor/StatusBar'
 import { uuid } from '@/lib/uuid'
+
+// markdown 语言 → 二期 Obsidian 式即时渲染编辑器（atomic + KaTeX 独立 chunk，
+// 仅 markdown 编辑时加载，非 markdown 用户零增量）
+const MarkdownEditor = lazy(() =>
+  import('@/components/editor/MarkdownEditor').then((m) => ({
+    default: m.MarkdownEditor,
+  }))
+)
+
+/** CodeBlock / MarkdownEditor 共用命令句柄 */
+type EditorHandle = { insert: (text: string) => void; focus: () => void }
 
 /** 选中记录时渲染（key=record._id 强制重建编辑器） */
 function EditorContent({ recordId }: { recordId: string }) {
@@ -34,7 +45,7 @@ function EditorContent({ recordId }: { recordId: string }) {
     toggleSidebar,
   } = useUi()
   const toast = useToast((s) => s.show)
-  const codeRef = useRef<CodeBlockHandle>(null)
+  const codeRef = useRef<EditorHandle>(null)
 
   // 注意：所有 hooks 必须位于条件 return 之前（record 可能因删除/外部同步变为 undefined，
   // 若跳过 useMemo 会导致 React 报 "Rendered fewer hooks than expected"）
@@ -120,7 +131,7 @@ function EditorContent({ recordId }: { recordId: string }) {
       return
     }
     codeRef.current?.insert(`\n${markdown}\n`)
-    toast('图片已插入（二期支持就地预览）')
+    toast('图片已插入')
   }
 
   return (
@@ -211,19 +222,32 @@ function EditorContent({ recordId }: { recordId: string }) {
         )}
 
         <div className="group relative min-h-0 flex-1">
-          <CodeBlock
-            ref={codeRef}
-            key={`${record._id}:${activeFragment.id}`}
-            value={activeFragment.content}
-            language={activeFragment.language}
-            dark={isDark}
-            onChange={(content) =>
-              patchFragment(activeFragment.id, { content })
-            }
-            onPasteImage={
-              activeFragment.language === 'markdown' ? handlePasteImage : undefined
-            }
-          />
+          {activeFragment.language === 'markdown' ? (
+            <Suspense fallback={<div className="h-full w-full" />}>
+              <MarkdownEditor
+                ref={codeRef}
+                key={`${record._id}:${activeFragment.id}`}
+                value={activeFragment.content}
+                language={activeFragment.language}
+                dark={isDark}
+                onChange={(content) =>
+                  patchFragment(activeFragment.id, { content })
+                }
+                onPasteImage={handlePasteImage}
+              />
+            </Suspense>
+          ) : (
+            <CodeBlock
+              ref={codeRef}
+              key={`${record._id}:${activeFragment.id}`}
+              value={activeFragment.content}
+              language={activeFragment.language}
+              dark={isDark}
+              onChange={(content) =>
+                patchFragment(activeFragment.id, { content })
+              }
+            />
+          )}
           {/* 代码块内复制按钮 */}
           <Button
             variant="ghost"

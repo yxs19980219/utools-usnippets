@@ -52,6 +52,8 @@ interface Utools {
     removeItem(key: string): void
   }
   copyText(text: string): boolean
+  /** 用系统默认方式打开外部链接（markdown 编辑器链接点击） */
+  shellOpenExternal(url: string): void
   isDarkColors(): boolean
   getPath(name: string): string
   showOpenDialog(options: Record<string, unknown>): string[] | undefined

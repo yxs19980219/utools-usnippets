@@ -18,7 +18,9 @@
   "commit": null,
   "pr_url": null,
   "subtasks": [],
-  "children": [],
+  "children": [
+    "08-15-pattern-vault-phase2"
+  ],
   "parent": null,
   "relatedFiles": [],
   "notes": "",

@@ -27,8 +27,10 @@ interface RecordsState {
   loaded: boolean
   saveState: SaveState
   load: () => Promise<void>
-  /** 新建空白记录（默认一个 js 片段），落库后返回（调用方负责选中） */
-  createRecord: () => Promise<PatternRecord | null>
+  /** 新建记录（kind: snippet 默认语言片段 / note 单 markdown 片段），落库后返回（调用方负责选中） */
+  createRecord: (kind?: 'snippet' | 'note') => Promise<PatternRecord | null>
+  /** 新建笔记（单 markdown 片段） */
+  createNote: () => Promise<PatternRecord | null>
   /** 内存更新 + 防抖 1s 落库 */
   updateRecord: (id: string, patch: Partial<PatternRecord>) => void
   /** 立即落库（组件卸载/窗口关闭前调用） */
@@ -81,15 +83,16 @@ export const useRecords = create<RecordsState>((set, get) => ({
     set({ records, loaded: true, saveState: 'idle' })
   },
 
-  createRecord: async () => {
+  createRecord: async (kind = 'snippet') => {
     const now = Date.now()
     const defaultLanguage =
       useSettings.getState().defaultLanguage || 'javascript'
+    const language = kind === 'note' ? 'markdown' : defaultLanguage
     const record: PatternRecord = {
       _id: `${PATTERN_PREFIX}${uuid()}`,
       title: '',
       scenario: '',
-      fragments: [{ id: uuid(), language: defaultLanguage, content: '' }],
+      fragments: [{ id: uuid(), language, content: '' }],
       categoryId: null,
       tags: [],
       favorite: false,
@@ -105,6 +108,10 @@ export const useRecords = create<RecordsState>((set, get) => ({
       saveState: 'saved',
     })
     return record
+  },
+
+  createNote: async () => {
+    return get().createRecord('note')
   },
 
   updateRecord: (id, patch) => {
