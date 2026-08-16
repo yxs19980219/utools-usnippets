@@ -4,7 +4,7 @@
  * 仅在多片段（>1）时渲染；tab 均分宽度，间隔竖线，选中项 accent 背景
  * 双击 tab 或右键"重命名"内联改名；悬停显示完整名称
  */
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { PencilIcon, TrashIcon } from 'lucide-react'
 import type { Fragment } from '@/types'
 import { cn } from '@/lib/utils'
@@ -39,11 +39,27 @@ export function FragmentTabs({
   const dragId = useRef<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const ignoreBlur = useRef(false)
+  const ignoreBlurTimer = useRef<number | null>(null)
 
-  const startRename = (f: Fragment) => {
+  const startRename = (f: Fragment, index: number) => {
+    if (ignoreBlurTimer.current !== null) clearTimeout(ignoreBlurTimer.current)
+    ignoreBlur.current = true
+    ignoreBlurTimer.current = window.setTimeout(() => {
+      ignoreBlur.current = false
+    }, 300)
     setEditingId(f.id)
-    setDraft(f.name ?? '')
+    setDraft(tabLabel(f, index))
   }
+
+  // commit 后立即 focus+全选（双击路径无菜单，直接生效；右键路径由
+  // onCloseAutoFocus 在菜单关闭瞬间接管，避免固定延时）
+  useLayoutEffect(() => {
+    if (editingId === null) return
+    inputRef.current?.focus()
+    inputRef.current?.select()
+  }, [editingId])
 
   const commitRename = () => {
     if (editingId === null) return
@@ -74,25 +90,30 @@ export function FragmentTabs({
                 onClick={() => {
                   if (editingId !== f.id) onSelect(f.id)
                 }}
-                onDoubleClick={() => startRename(f)}
+                onDoubleClick={() => startRename(f, i)}
                 title={tabLabel(f, i)}
                 className={cn(
-                  'group flex h-6 min-w-0 flex-1 cursor-pointer items-center justify-center px-2 text-xs transition-colors select-none',
+                  'group flex h-6 min-w-0 flex-1 cursor-pointer items-center justify-center px-2 text-xs select-none',
                   f.id === activeId
                     ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground hover:bg-accent/60 hover:text-accent-foreground'
+                    : 'text-muted-foreground'
                 )}
               >
                 {editingId === f.id ? (
                   <input
-                    autoFocus
+                    ref={inputRef}
                     value={draft}
+                    onFocus={(e) => e.currentTarget.select()}
                     onChange={(e) => setDraft(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') commitRename()
                       if (e.key === 'Escape') cancelRename()
+                      if (e.key === 'Tab') commitRename()
                     }}
-                    onBlur={commitRename}
+                    onBlur={() => {
+                      if (ignoreBlur.current) return
+                      commitRename()
+                    }}
                     onClick={(e) => e.stopPropagation()}
                     onDoubleClick={(e) => e.stopPropagation()}
                     className="w-full min-w-0 bg-transparent text-center outline-none placeholder:text-muted-foreground/60"
@@ -103,8 +124,18 @@ export function FragmentTabs({
                 )}
               </div>
             </ContextMenuTrigger>
-            <ContextMenuContent>
-              <ContextMenuItem onClick={() => startRename(f)}>
+            <ContextMenuContent
+              onCloseAutoFocus={(e) => {
+                e.preventDefault()
+                const doFocus = () => {
+                  inputRef.current?.focus()
+                  inputRef.current?.select()
+                }
+                doFocus()
+                requestAnimationFrame(doFocus)
+              }}
+            >
+              <ContextMenuItem onClick={() => startRename(f, i)}>
                 <PencilIcon /> 重命名
               </ContextMenuItem>
               <ContextMenuItem

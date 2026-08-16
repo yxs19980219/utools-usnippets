@@ -138,7 +138,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex w-36 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
+    <aside className="flex w-36 shrink-0 flex-col border-r border-border bg-background text-sidebar-foreground">
       {/* 库：固定顶部 */}
       <div className="shrink-0 p-1.5">
         <div className="mb-1 px-1 text-[11px] font-medium text-muted-foreground">
