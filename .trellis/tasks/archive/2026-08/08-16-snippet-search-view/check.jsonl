@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "检查 SearchView/新 search 函数是否重复已有组件/逻辑，是否可复用 cn/Badge/Input"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "验证 records store → 片段条目 → 列表渲染的数据流跨层一致性，及与主界面 setSubInput 分支的隔离"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "数据层/组件质量规范，检查新增代码是否符合项目质量标准"}
+{"file": ".trellis/spec/guides/release-guidelines.md", "reason": "确认 plugin.json 改动符合发布/版本规范（如有版本号需对齐 package.json）"}

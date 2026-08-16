@@ -1,0 +1,4 @@
+{"file": "C:/Users/Fengzhi/.agents/skills/utools-dev/references/utools-api.md", "reason": "uTools API 权威参考：onPluginEnter/setSubInput/removeSubInput/hideMainWindowPasteText/copyText 签名与语义"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "本 feature 跨 store（records）→ lib（search/clipboard）→ 组件（SearchView）→ uTools API，先读跨层思维指南"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "新增 buildSnippetEntries/filterSnippets 前先确认不重复 filterPatterns/copyText 已有能力"}
+{"file": ".trellis/spec/guides/release-guidelines.md", "reason": "plugin.json 新增 feature 涉及版本/发布规范；改 public/plugin.json 前需遵循"}
