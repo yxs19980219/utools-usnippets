@@ -120,6 +120,26 @@ Questions to answer:
 
 **Prevention**: 新增 atomic 相关全局覆盖时，选择器一律带 `.atomic-cm-editor.cm-editor` 前缀确保特异性。
 
+### 覆盖第三方样式表必须提高特异性（懒加载 chunk 顺序在 globals.css 之后）
+
+**Symptom**: 在 globals.css 里想放大 markdown 标题字号，写 `.cm-line.cm-atomic-h1 { font-size: 1.6em }`（与源样式同特异性）完全不生效，标题仍是 atomic 默认的 1.35em
+
+**Cause**: atomic 样式表（`@atomic-editor/editor/dist/styles/inline-preview.css`）由 MarkdownEditor **懒加载 chunk** 注入（MarkdownEditor.css），加载顺序晚于 globals.css（index chunk）。CSS 级联：同特异性下**后加载者赢**，所以源样式始终压过覆盖。
+
+**Fix**: 选择器带 `.atomic-cm-editor` 前缀提高特异性（0,3,0 > 0,2,0），与加载顺序无关：
+
+```css
+/* Wrong —— 特异性 0,2,0 与源样式相同，懒加载顺序在后，永远被压 */
+.cm-line.cm-atomic-h1 { font-size: 1.6em; }
+
+/* Correct —— 特异性 0,3,0 压过源样式表，不受加载顺序影响 */
+.atomic-cm-editor .cm-line.cm-atomic-h1 { font-size: 1.6em; }
+```
+
+当前维护的覆盖清单（globals.css，2026-08）：h1 1.6em / h2 1.35em / h3 1.2em / h4 1.1em / h5 1em / h6 0.9em，只改 font-size，weight/letter-spacing/uppercase 等其余样式继承源规则。
+
+**Prevention**: 覆盖任何**懒加载组件**（lazy/Suspense 拆分 chunk）的内置样式时，检查源选择器的特异性并加前缀提高一级；只改必须覆盖的属性，其余交给源样式表。
+
 ### React Hooks 顺序违规（条件 return 前的 hooks 缺失）
 
 **Symptom**: 记录被删除/外部同步后组件崩溃，报错 "Rendered fewer hooks than expected"
