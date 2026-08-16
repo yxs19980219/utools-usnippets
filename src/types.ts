@@ -7,6 +7,8 @@ export interface Fragment {
   id: string
   language: string
   content: string
+  /** 片段自定义名称（双击/右键重命名）；缺省时按索引显示"片段 N" */
+  name?: string
 }
 
 /** 记录（pattern）文档 */

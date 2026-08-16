@@ -216,6 +216,7 @@ function EditorContent({ recordId }: { recordId: string }) {
             fragments={record.fragments}
             activeId={activeFragment.id}
             onSelect={setActiveFragment}
+            onRename={(id, name) => patchFragment(id, { name })}
             onRemove={removeFragment}
             onReorder={reorderFragments}
           />
