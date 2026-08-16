@@ -151,7 +151,7 @@ function EditorContent({ recordId }: { recordId: string }) {
           value={record.title}
           onChange={(e) => updateRecord(record._id, { title: e.target.value })}
           placeholder="输入标题"
-          className="w-full min-w-0 flex-1 border-none bg-transparent text-base font-semibold outline-none placeholder:font-semibold placeholder:text-muted-foreground/60"
+          className="w-full min-w-0 flex-1 border-none bg-transparent text-lg font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground/40"
         />
         <Button
           variant="ghost"
@@ -221,7 +221,7 @@ function EditorContent({ recordId }: { recordId: string }) {
           />
         )}
 
-        <div className="group relative min-h-0 flex-1">
+        <div className="relative min-h-0 flex-1">
           {activeFragment.language === 'markdown' ? (
             <Suspense fallback={<div className="h-full w-full" />}>
               <MarkdownEditor
@@ -248,16 +248,6 @@ function EditorContent({ recordId }: { recordId: string }) {
               }
             />
           )}
-          {/* 代码块内复制按钮 */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-1 right-1 size-7 opacity-0 transition-opacity group-hover:opacity-100"
-            onClick={handleCopyCurrent}
-            title="复制当前片段"
-          >
-            <CopyIcon className="size-3.5" />
-          </Button>
         </div>
       </div>
 

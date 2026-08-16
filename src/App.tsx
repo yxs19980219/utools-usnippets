@@ -60,8 +60,7 @@ export default function App() {
     ut?.onPluginEnter?.((action) => {
       // 一期只有 pattern-vault 主功能，无独立搜索入口（二期呼出即搜）
       console.log('[pattern-vault] enter', action.code)
-      // 实测窗口默认 600 高（不含 uTools 搜索栏），进入时拉高到 700
-      ut.setExpendHeight?.(700)
+      // 窗口高度不干预：默认 800×600（plugin.json），用户手动拉伸后由 uTools 记忆
       ut.setSubInput?.(
         ({ text }) => useUi.getState().setSearchQuery(text),
         '搜索模式库：标题 / 场景 / 标签 / 正文…',

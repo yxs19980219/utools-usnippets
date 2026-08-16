@@ -232,6 +232,27 @@
   background: transparent;
 }
 
+/* markdown 标题放大（覆盖 @atomic-editor/editor 的 1.35em/1.2em… 偏小阶梯；
+ * 选择器加 .atomic-cm-editor 前缀保证特异性压过懒加载样式表） */
+.atomic-cm-editor .cm-line.cm-atomic-h1 {
+  font-size: 1.6em;
+}
+.atomic-cm-editor .cm-line.cm-atomic-h2 {
+  font-size: 1.35em;
+}
+.atomic-cm-editor .cm-line.cm-atomic-h3 {
+  font-size: 1.2em;
+}
+.atomic-cm-editor .cm-line.cm-atomic-h4 {
+  font-size: 1.1em;
+}
+.atomic-cm-editor .cm-line.cm-atomic-h5 {
+  font-size: 1em;
+}
+.atomic-cm-editor .cm-line.cm-atomic-h6 {
+  font-size: 0.9em;
+}
+
 /* ---- 二期：atomic 编辑器（Obsidian 式即时渲染）----
  * 主题走 atomic 内置两套：无 data-theme = 暗色默认；[data-theme="light"] = 浅色。
  * 1. CM6 内置搜索面板在深色下跟随项目主题（atomic 默认面板背景不适用）

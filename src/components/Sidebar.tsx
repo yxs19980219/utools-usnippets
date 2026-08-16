@@ -15,6 +15,7 @@ import {
   PlusIcon,
   SettingsIcon,
   StarIcon,
+  TagIcon,
   TrashIcon,
   XIcon,
 } from 'lucide-react'
@@ -138,8 +139,8 @@ export function Sidebar() {
 
   return (
     <aside className="flex w-36 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
-      <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
-        {/* 库 */}
+      {/* 库：固定顶部 */}
+      <div className="shrink-0 p-1.5">
         <div className="mb-1 px-1 text-[11px] font-medium text-muted-foreground">
           库
         </div>
@@ -170,9 +171,11 @@ export function Sidebar() {
           <span className="min-w-0 flex-1 truncate">回收站</span>
           <span className="text-xs text-muted-foreground">{trashCount}</span>
         </NavRow>
+      </div>
 
-        {/* 文件夹 */}
-        <div className="mt-3 mb-1 flex items-center justify-between px-1">
+      {/* 文件夹：标题固定，区域占 40%，内容滚动 */}
+      <div className="flex min-h-0 flex-[2] flex-col">
+        <div className="flex shrink-0 items-center justify-between px-2 pt-1.5 pb-1">
           <span className="text-[11px] font-medium text-muted-foreground">
             文件夹
           </span>
@@ -187,6 +190,7 @@ export function Sidebar() {
             <PlusIcon className="size-3.5" />
           </button>
         </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-1.5">
 
         {creating && (
           <div className="flex items-center gap-1 px-2 pb-1">
@@ -277,23 +281,26 @@ export function Sidebar() {
             </ContextMenu>
           )
         )}
+        </div>
+      </div>
 
-        {/* 标签 */}
-        {cloud.length > 0 && (
-          <div className="mt-3">
-            <div className="mb-1 flex items-center justify-between px-1">
-              <span className="text-[11px] font-medium text-muted-foreground">
-                标签
-              </span>
-              {view.type === 'tag' && (
-                <button
-                  onClick={() => setView({ type: 'all' })}
-                  className="text-[11px] text-muted-foreground hover:text-foreground"
-                >
-                  清除
-                </button>
-              )}
-            </div>
+      {/* 标签：标题固定，区域占 60%（中间偏下），内容滚动 */}
+      {cloud.length > 0 && (
+        <div className="flex min-h-0 flex-[3] flex-col">
+          <div className="flex shrink-0 items-center justify-between px-2 pt-1.5 pb-1">
+            <span className="text-[11px] font-medium text-muted-foreground">
+              标签
+            </span>
+            {view.type === 'tag' && (
+              <button
+                onClick={() => setView({ type: 'all' })}
+                className="text-[11px] text-muted-foreground hover:text-foreground"
+              >
+                清除
+              </button>
+            )}
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-1.5">
             <div className="flex flex-col gap-0.5">
               {cloud.map(({ tag, count }) => (
                 <NavRow
@@ -308,7 +315,7 @@ export function Sidebar() {
                   }
                   title={`标签 #${tag}`}
                 >
-                  <span className="text-muted-foreground">#</span>
+                  <TagIcon className="size-3 shrink-0 text-muted-foreground" />
                   <span className="min-w-0 flex-1 truncate">{tag}</span>
                   <span className="text-xs text-muted-foreground">
                     {count}
@@ -317,11 +324,11 @@ export function Sidebar() {
               ))}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* 底部：设置 */}
-      <div className="flex h-8 shrink-0 items-center border-t border-sidebar-border px-1">
+      {/* 底部：设置（居中，无分割线） */}
+      <div className="flex h-8 shrink-0 items-center justify-center">
         <button
           onClick={() => setSettingsOpen(true)}
           className="rounded-sm p-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground"

@@ -9,12 +9,11 @@
  */
 import { useMemo, useState } from 'react'
 import {
-  BookOpenIcon,
   CopyIcon,
   FileCode2Icon,
   FileImageIcon,
+  FileTextIcon,
   FolderInputIcon,
-  MoreHorizontalIcon,
   PlusIcon,
   RotateCcwIcon,
   SearchIcon,
@@ -148,7 +147,7 @@ function ListItem({
           >
             <div className="flex items-center gap-1.5">
               {meta.isNote ? (
-                <BookOpenIcon className="size-3 shrink-0 text-muted-foreground" />
+                <FileTextIcon className="size-3 shrink-0 text-muted-foreground" />
               ) : (
                 <FileCode2Icon className="size-3 shrink-0 text-muted-foreground" />
               )}
@@ -161,21 +160,6 @@ function ListItem({
                 {firstLine(record.scenario)}
               </span>
             )}
-            <span className="absolute top-1 right-1 flex items-center gap-1">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleCopy()
-                }}
-                className="rounded-sm p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-accent-foreground group-hover:opacity-100"
-                title="复制全文"
-              >
-                <CopyIcon className="size-3" />
-              </button>
-              <span className="rounded-sm bg-background/80 px-1 py-px font-mono text-[10px] text-muted-foreground">
-                {meta.badge}
-              </span>
-            </span>
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
@@ -355,7 +339,7 @@ export function ListPane() {
             片段
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => void handleNew('note')}>
-            <BookOpenIcon className="size-3.5" />
+            <FileTextIcon className="size-3.5" />
             笔记
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -414,9 +398,6 @@ export function ListPane() {
             }}
           />
         ))}
-        <div className="flex justify-center gap-1 p-1">
-          <MoreHorizontalIcon className="size-4 text-muted-foreground/50" />
-        </div>
       </div>
     </div>
   )
