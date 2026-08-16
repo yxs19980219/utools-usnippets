@@ -82,12 +82,16 @@ function themeExtension(dark: boolean) {
   const base = EditorView.theme(
     {
       '&': { backgroundColor: 'transparent' },
-      '.cm-activeLine': { backgroundColor: 'var(--accent)' },
-      '.cm-activeLineGutter': { backgroundColor: 'var(--accent)' },
-      '.cm-selectionBackground, &.cm-focused .cm-selectionBackground':
-        dark
-          ? { backgroundColor: 'rgba(94, 129, 244, 0.35)' }
-          : { backgroundColor: 'rgba(94, 129, 244, 0.22)' },
+      '.cm-activeLine': { backgroundColor: 'transparent' },
+      '.cm-activeLineGutter': { backgroundColor: 'transparent' },
+      // 选中背景需与 CM base theme 同深度选择器（&light/&dark 5 类），
+      // 否则深色下被 oneDark #3E4451（与背景同色）压过
+      '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground':
+        {
+          backgroundColor: dark
+            ? 'rgba(94, 129, 244, 0.35)'
+            : 'rgba(94, 129, 244, 0.22)',
+        },
     },
     { dark }
   )

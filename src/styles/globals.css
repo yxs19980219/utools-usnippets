@@ -207,9 +207,10 @@
   border-right: 1px solid var(--border);
   color: var(--muted-foreground);
 }
+/* 编辑器：光标行无背景（避免与选中高亮视觉冲突，两个编辑器统一） */
 .cm-editor .cm-activeLine,
 .cm-editor .cm-activeLineGutter {
-  background: var(--accent);
+  background: transparent;
 }
 
 /* 编辑器外壳（浅色主题） */
@@ -226,10 +227,13 @@
   background: var(--card);
 }
 
-/* atomic 编辑器：输入行无背景（一期 .cm-editor .cm-activeLine 规则不适用） */
-.atomic-cm-editor.cm-editor .cm-activeLine,
-.atomic-cm-editor.cm-editor .cm-activeLineGutter {
-  background: transparent;
+/* atomic 编辑器选中背景：覆盖内置 --atomic-editor-selection-bg（原值 color-mix，
+ * Chrome 88 降级后深色偏暗、浅色仅 18% 透明，均难辨认）。改为固定 rgba */
+.atomic-cm-editor.cm-editor {
+  --atomic-editor-selection-bg: rgba(139, 92, 246, 0.4);
+}
+[data-theme="light"] .atomic-cm-editor.cm-editor {
+  --atomic-editor-selection-bg: rgba(124, 58, 237, 0.28);
 }
 
 /* markdown 标题放大（覆盖 @atomic-editor/editor 的 1.35em/1.2em… 偏小阶梯；

@@ -37,18 +37,22 @@ export function StatusBar({
   return (
     <div className="flex h-7 shrink-0 items-center gap-3 border-t border-border bg-muted/40 px-2 text-xs text-muted-foreground">
       <div className="flex shrink-0 items-center gap-3">
-        <Select value={language} onValueChange={onLanguageChange}>
-          <SelectTrigger className="h-5 w-auto gap-1 border-0 bg-transparent px-1 text-xs shadow-none hover:bg-accent">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {LANGUAGES.map((l) => (
-              <SelectItem key={l.value} value={l.value}>
-                {l.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {language === 'markdown' ? (
+          <span className="px-1 text-xs">Markdown</span>
+        ) : (
+          <Select value={language} onValueChange={onLanguageChange}>
+            <SelectTrigger className="h-5 w-auto gap-1 border-0 bg-transparent px-1 text-xs shadow-none hover:bg-accent">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.filter((l) => l.value !== 'markdown').map((l) => (
+                <SelectItem key={l.value} value={l.value}>
+                  {l.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <span>{lineCount} 行</span>
       </div>
 
