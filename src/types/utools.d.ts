@@ -70,6 +70,8 @@ interface Utools {
   removeSubInput(): boolean
   setExpendHeight(height: number): boolean
   hideMainWindow(isRestorePreWindow?: boolean): boolean
+  /** 退出插件应用（默认隐藏后台；isKill=true 结束进程） */
+  outPlugin(isKill?: boolean): boolean
   /** 隐藏主窗口并把文本输入到打开 uTools 前所在应用的光标处（搜索视图 Enter 粘贴） */
   hideMainWindowPasteText(text: string): boolean
 }

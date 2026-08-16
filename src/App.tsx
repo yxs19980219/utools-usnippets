@@ -64,8 +64,7 @@ export default function App() {
       setEnterCode(action.code)
       console.log('[pattern-vault] enter', action.code)
       if (action.code === 'pattern-vault-search') {
-        // 搜索视图用页面内输入框（uTools 子输入框无键盘事件 API），不注册子输入框；
-        // 若此前在主界面注册过，先移除避免残留
+        // 片段搜索视图：SearchView 自己注册/移除顶部 uTools 子输入框
         ut.removeSubInput?.()
         return
       }
@@ -83,7 +82,7 @@ export default function App() {
 
   const collapsed = useUi((s) => s.sidebarCollapsed)
 
-  // 片段搜索视图：全窗口单视图，无侧栏/列表/编辑三栏
+  // 片段搜索视图：顶部 uTools 原生子输入框 + 下方片段列表（无三栏）
   if (enterCode === 'pattern-vault-search') {
     return <SearchView />
   }

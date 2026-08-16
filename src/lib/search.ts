@@ -68,6 +68,14 @@ export function filterSnippets(
   })
 }
 
+/** 片段内容预览：去掉开头空行，取前 3 行拼接（搜索视图/主搜索框结果用） */
+export function previewSnippet(content: string): string {
+  const lines = content.split('\n')
+  let start = 0
+  while (start < lines.length && lines[start].trim() === '') start++
+  return lines.slice(start, start + 3).join('\n')
+}
+
 export interface FilterOptions {
   /** 搜索词（标题/场景/标签/正文全文命中） */
   query?: string
