@@ -166,31 +166,15 @@ function EditorPane({ record }: Props) {
 
 ---
 
-## Design Decision: 独立 feature 的键盘导航用页面内输入框（uTools 子输入框无键盘事件 API）
+## 教训：『像主界面一样顶部搜索框』= setSubInput + document 级 keydown（勿绕道 mainPush / 页面内输入框）
 
-**Context**: 新增独立快捷命令 feature（如 `pattern-vault-search`）需要方向键 ↑↓ / Enter / Ctrl+C 键盘导航。uTools 的 `setSubInput` 只提供文本 `onChange` 回调，**没有键盘事件 API**（`utools-api.md`），无法在子输入框上捕获方向键/回车/组合键。
+**Symptom**: 用户要求片段搜索视图"和主界面一样在最顶部用 uTools 的搜索功能"。主界面顶部即 `setSubInput` 原生子输入框。因误以为子输入框无法捕获键盘事件（方向键/回车/Ctrl+C），先后绕道页面内输入框、`onMainPush` 推送方案，多轮返工后才回到正确形态。
 
-**Decision**: 需要键盘导航的独立视图（`SearchView.tsx`）用**页面内 `<Input>`**（autofocus + `onKeyDown`），**不注册 `setSubInput`**；主界面 `pattern-vault` 维持 uTools 子输入框现状（纯文本过滤场景仍可用子输入框）。
+**Cause**: 两个错误假设：
+1. 假设"uTools 子输入框只提供 onChange、无键盘事件"——**错**。子输入框虽是 uTools 原生渲染，但**焦点在子输入框时键盘事件仍会冒泡到页面的 `document`**，`document.addEventListener('keydown')` 即可捕获方向键/回车/组合键（参照 uTools 知名插件 uTools-Finder / uDict / uTools-ProcessKiller 的实现）。
+2. 用户说"像 X 一样"时未照抄 X 的实现，凭术语联想发明了新架构。
 
-```tsx
-// SearchView：页面内输入框捕获键盘（↑↓ 移动选中 / Enter 粘贴 / Ctrl+C 复制）
-<Input value={query} onChange={(e) => setQuery(e.target.value)}
-  onKeyDown={handleKeyDown} autoFocus />
-```
-
-- 进入时：`App.tsx` 按 `action.code` 分支，搜索视图分支先 `ut.removeSubInput?.()` 清残留、**不注册**子输入框
-- 退出：不依赖 `onPluginOut` 清理子输入框（未注册）
-- **Prevention**: 需要键盘交互的 feature（方向键/回车/组合键）→ 页面内输入框；仅需文本过滤 → uTools 子输入框（视觉更原生）。两视图可共存。
-
----
-
-## 教训：『像主界面一样顶部搜索框』= setSubInput，勿绕道 mainPush
-
-**Symptom**: 用户要求片段搜索视图"和主界面一样在最顶部用 uTools 的搜索功能"。主界面顶部即 `setSubInput` 原生子输入框。因误以为需要键盘导航（方向键/回车/Ctrl+C），绕道 `onMainPush`（feature.mainPush 推送方案），折腾两轮全失败（dev 模式无效果、交互不直观、需插件设置勾选推送开关），最终回到 setSubInput 才符合用户预期。
-
-**Cause**: 把用户"顶部搜索框"的诉求翻译成了"必须捕获键盘事件"，进而选择了完全不同的 mainPush 架构。实际 uTools 生态标准形态（剪贴板/翻译等插件）= **`setSubInput` 顶部原生搜索框 + 页面列表 + 点击复制**，键盘交互本来就不存在——同类插件都是点击执行。
-
-**Fix**: 用户说"像 X 一样"时，先照抄 X 的实现方式，不要发明新架构：
+**Fix**: 标准形态 = `setSubInput` 顶部原生搜索框 + 页面列表 + document 级 keydown：
 
 ```tsx
 // SearchView 自注册/移除子输入框（与主界面一致）
@@ -198,9 +182,21 @@ useEffect(() => {
   window.utools?.setSubInput?.(({ text }) => setQuery(text), '搜索片段：…', true)
   return () => { window.utools?.removeSubInput?.() }
 }, [])
+
+// document 级键盘监听：子输入框焦点下页面仍能捕获按键
+useEffect(() => {
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowDown') { /* 移动选中 */ }
+    else if (e.key === 'Enter') { /* hideMainWindowPasteText */ }
+    else if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) { /* copyText */ }
+  }
+  document.addEventListener('keydown', onKeyDown)
+  return () => document.removeEventListener('keydown', onKeyDown)
+}, [deps])
 ```
 
 **Prevention**:
-1. uTools 交互需求默认用 `setSubInput` + 列表 + 点击执行；只有确认需要键盘快捷键时才考虑页面内输入框
+1. uTools 交互需求默认用 `setSubInput` + 页面列表；需要键盘操作（方向键/回车/组合键）→ **`document.addEventListener('keydown')`**，不要为此换输入方案
 2. `onMainPush` 只用于"用户在主搜索框输入时推送结果"的场景（如翻译/计算器），且需用户在插件设置勾选"允许推送内容到搜索面板"，dev 调试不可靠——默认不用
-3. 用户表述有歧义时先确认"具体是哪个插件的什么效果"，再动手，别凭术语联想
+3. 页面内 `<Input>` 仅在无法使用 uTools 子输入框的场景（如需要输入框内嵌在页面布局中）才考虑，视觉与原生不一致
+4. 用户表述有歧义时先确认"具体是哪个插件的什么效果"，再动手，别凭术语联想
