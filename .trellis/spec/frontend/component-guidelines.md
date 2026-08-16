@@ -163,3 +163,21 @@ function EditorPane({ record }: Props) {
 ```
 
 **Prevention**: 规则：**组件内所有 hooks 必须无条件执行**，条件返回只能在全部 hooks 之后
+
+---
+
+## Design Decision: 独立 feature 的键盘导航用页面内输入框（uTools 子输入框无键盘事件 API）
+
+**Context**: 新增独立快捷命令 feature（如 `pattern-vault-search`）需要方向键 ↑↓ / Enter / Ctrl+C 键盘导航。uTools 的 `setSubInput` 只提供文本 `onChange` 回调，**没有键盘事件 API**（`utools-api.md`），无法在子输入框上捕获方向键/回车/组合键。
+
+**Decision**: 需要键盘导航的独立视图（`SearchView.tsx`）用**页面内 `<Input>`**（autofocus + `onKeyDown`），**不注册 `setSubInput`**；主界面 `pattern-vault` 维持 uTools 子输入框现状（纯文本过滤场景仍可用子输入框）。
+
+```tsx
+// SearchView：页面内输入框捕获键盘（↑↓ 移动选中 / Enter 粘贴 / Ctrl+C 复制）
+<Input value={query} onChange={(e) => setQuery(e.target.value)}
+  onKeyDown={handleKeyDown} autoFocus />
+```
+
+- 进入时：`App.tsx` 按 `action.code` 分支，搜索视图分支先 `ut.removeSubInput?.()` 清残留、**不注册**子输入框
+- 退出：不依赖 `onPluginOut` 清理子输入框（未注册）
+- **Prevention**: 需要键盘交互的 feature（方向键/回车/组合键）→ 页面内输入框；仅需文本过滤 → uTools 子输入框（视觉更原生）。两视图可共存。

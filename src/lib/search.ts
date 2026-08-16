@@ -1,8 +1,72 @@
 /**
  * lib/search.ts —— 纯函数过滤（标题/场景/标签/正文全文，小写 includes）
+ * 记录级：filterPatterns（主界面列表）；片段级：buildSnippetEntries/filterSnippets（搜索视图）
  */
 import type { PatternRecord } from '../types'
-import { UNCATEGORIZED } from '../types'
+import { UNCATEGORIZED, isNote } from '../types'
+
+/** 片段搜索视图的列表条目（一个代码片段 = 一条） */
+export interface SnippetEntry {
+  recordId: string
+  recordTitle: string
+  recordScenario: string
+  recordTags: string[]
+  fragmentId: string
+  /** 片段在记录内的下标（组内排序，展示"片段 N"） */
+  fragmentIndex: number
+  /** Fragment.name ?? `片段 ${index+1}` */
+  name: string
+  language: string
+  content: string
+  /** 是否为所属记录的组首（组首显示完整标题，其余缩进） */
+  groupStart: boolean
+}
+
+/**
+ * 片段条目化（搜索视图数据源）：排除回收站记录与笔记（isNote，全 markdown），
+ * 再过滤掉记录内 markdown 片段，按「记录序 → 片片段序」展平 → 同记录天然相邻归组。
+ * 记录内首个非 markdown 片段标记 groupStart。
+ */
+export function buildSnippetEntries(records: PatternRecord[]): SnippetEntry[] {
+  const entries: SnippetEntry[] = []
+  for (const record of records) {
+    if (record.deleted || isNote(record)) continue
+    let groupStart = true
+    record.fragments.forEach((fragment, index) => {
+      if (fragment.language === 'markdown') return
+      entries.push({
+        recordId: record._id,
+        recordTitle: record.title,
+        recordScenario: record.scenario,
+        recordTags: record.tags,
+        fragmentId: fragment.id,
+        fragmentIndex: index,
+        name: fragment.name ?? `片段 ${index + 1}`,
+        language: fragment.language,
+        content: fragment.content,
+        groupStart,
+      })
+      groupStart = false
+    })
+  }
+  return entries
+}
+
+/** 片段级过滤：content / 标题 / 场景 / 标签 小写 includes；query 为空 → 全量 */
+export function filterSnippets(
+  entries: SnippetEntry[],
+  query: string
+): SnippetEntry[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return entries
+  return entries.filter((e) => {
+    if (e.content.toLowerCase().includes(q)) return true
+    if (e.recordTitle.toLowerCase().includes(q)) return true
+    if (e.recordScenario.toLowerCase().includes(q)) return true
+    if (e.recordTags.some((t) => t.toLowerCase().includes(q))) return true
+    return false
+  })
+}
 
 export interface FilterOptions {
   /** 搜索词（标题/场景/标签/正文全文命中） */

@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { ListPane } from '@/components/ListPane'
 import { EditorPane } from '@/components/EditorPane'
+import { SearchView } from '@/components/SearchView'
 import { SettingsDialog } from '@/components/SettingsDialog'
 import { ToastContainer } from '@/components/ToastContainer'
 import { useRecords } from '@/stores/records'
@@ -11,6 +12,8 @@ import { useUi } from '@/stores/ui'
 
 export default function App() {
   const darkMode = useSettings((s) => s.darkMode)
+  // 入口 feature code：pattern-vault-search → 独立搜索视图；其余 → 三栏主界面
+  const [enterCode, setEnterCode] = useState<string | null>(null)
 
   // 启动加载：设置 → 记录 → 分类
   useEffect(() => {
@@ -58,8 +61,14 @@ export default function App() {
   useEffect(() => {
     const ut = window.utools
     ut?.onPluginEnter?.((action) => {
-      // 一期只有 pattern-vault 主功能，无独立搜索入口（二期呼出即搜）
+      setEnterCode(action.code)
       console.log('[pattern-vault] enter', action.code)
+      if (action.code === 'pattern-vault-search') {
+        // 搜索视图用页面内输入框（uTools 子输入框无键盘事件 API），不注册子输入框；
+        // 若此前在主界面注册过，先移除避免残留
+        ut.removeSubInput?.()
+        return
+      }
       // 窗口高度不干预：默认 800×600（plugin.json），用户手动拉伸后由 uTools 记忆
       ut.setSubInput?.(
         ({ text }) => useUi.getState().setSearchQuery(text),
@@ -73,6 +82,11 @@ export default function App() {
   }, [])
 
   const collapsed = useUi((s) => s.sidebarCollapsed)
+
+  // 片段搜索视图：全窗口单视图，无侧栏/列表/编辑三栏
+  if (enterCode === 'pattern-vault-search') {
+    return <SearchView />
+  }
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">

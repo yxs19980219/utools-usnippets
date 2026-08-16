@@ -14,6 +14,11 @@
       "code": "pattern-vault",
       "explain": "面向开发者的模式库：场景 → 解法，沉淀可复制的代码片段与可阅读的笔记",
       "cmds": ["模式库", "Pattern Vault"]
+    },
+    {
+      "code": "pattern-vault-search",
+      "explain": "快速复制代码片段（片段级搜索，不含笔记）",
+      "cmds": ["片段搜索", "复制片段"]
     }
   ]
 }
