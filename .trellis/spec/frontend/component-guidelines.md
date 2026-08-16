@@ -181,3 +181,26 @@ function EditorPane({ record }: Props) {
 - 进入时：`App.tsx` 按 `action.code` 分支，搜索视图分支先 `ut.removeSubInput?.()` 清残留、**不注册**子输入框
 - 退出：不依赖 `onPluginOut` 清理子输入框（未注册）
 - **Prevention**: 需要键盘交互的 feature（方向键/回车/组合键）→ 页面内输入框；仅需文本过滤 → uTools 子输入框（视觉更原生）。两视图可共存。
+
+---
+
+## 教训：『像主界面一样顶部搜索框』= setSubInput，勿绕道 mainPush
+
+**Symptom**: 用户要求片段搜索视图"和主界面一样在最顶部用 uTools 的搜索功能"。主界面顶部即 `setSubInput` 原生子输入框。因误以为需要键盘导航（方向键/回车/Ctrl+C），绕道 `onMainPush`（feature.mainPush 推送方案），折腾两轮全失败（dev 模式无效果、交互不直观、需插件设置勾选推送开关），最终回到 setSubInput 才符合用户预期。
+
+**Cause**: 把用户"顶部搜索框"的诉求翻译成了"必须捕获键盘事件"，进而选择了完全不同的 mainPush 架构。实际 uTools 生态标准形态（剪贴板/翻译等插件）= **`setSubInput` 顶部原生搜索框 + 页面列表 + 点击复制**，键盘交互本来就不存在——同类插件都是点击执行。
+
+**Fix**: 用户说"像 X 一样"时，先照抄 X 的实现方式，不要发明新架构：
+
+```tsx
+// SearchView 自注册/移除子输入框（与主界面一致）
+useEffect(() => {
+  window.utools?.setSubInput?.(({ text }) => setQuery(text), '搜索片段：…', true)
+  return () => { window.utools?.removeSubInput?.() }
+}, [])
+```
+
+**Prevention**:
+1. uTools 交互需求默认用 `setSubInput` + 列表 + 点击执行；只有确认需要键盘快捷键时才考虑页面内输入框
+2. `onMainPush` 只用于"用户在主搜索框输入时推送结果"的场景（如翻译/计算器），且需用户在插件设置勾选"允许推送内容到搜索面板"，dev 调试不可靠——默认不用
+3. 用户表述有歧义时先确认"具体是哪个插件的什么效果"，再动手，别凭术语联想
