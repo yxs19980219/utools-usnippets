@@ -149,7 +149,7 @@ const MAIN_WINDOW_HEIGHT = 600
 /** 快捷复制提示：n = 视口内位置 0~9（0 = 第 10 项，显示 Ctrl+0） */
 function ShortcutBadge({ n }: { n: number }) {
   return (
-    <span className="shrink-0 self-center text-sm font-medium text-muted-foreground">
+    <span className="shrink-0 self-center text-base font-medium text-muted-foreground">
       Ctrl+{n === 9 ? '0' : n + 1}
     </span>
   )
