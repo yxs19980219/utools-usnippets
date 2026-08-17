@@ -242,12 +242,10 @@ export const useRecords = create<RecordsState>((set, get) => ({
     )
   },
 
-  /** 从所有记录移除指定标签，返回受影响记录数 */
+  /** 从所有记录移除指定标签（含回收站记录，避免恢复后标签"复活"），返回受影响记录数 */
   removeTagFromAll: async (tag) => {
     const { records } = get()
-    const affected = records.filter(
-      (r) => !r.deleted && r.tags.includes(tag)
-    )
+    const affected = records.filter((r) => r.tags.includes(tag))
     if (affected.length === 0) return 0
     for (const r of affected) {
       r.tags = r.tags.filter((t) => t !== tag)

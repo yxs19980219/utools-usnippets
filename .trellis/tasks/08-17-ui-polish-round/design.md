@@ -46,7 +46,7 @@ Sidebar 标签右键删除 → 确认 → records.removeTagFromAll(tag)
 
 3. **createRecord 签名扩展**：`createRecord(kind, options?: { categoryId?: string|null, language?: string })`，默认保持现有行为（categoryId=null, 全局语言）。ListPane 的 `handleNew` 传入当前视图上下文。
 
-4. **回收站语义**：`moveCategoryToTrash` 只影响**未删除**的记录（已删除记录不动）。分类删除后，其下记录 categoryId 保留原值（恢复后仍回原分类）——与当前"移入未分类"行为不同，需在确认文案中说明"记录将进入回收站，可在回收站恢复"。
+4. **回收站语义**：`moveCategoryToTrash` 只影响**未删除**的记录（已删除记录不动），且将其 `categoryId` 清空——原分类已删除，保留 id 会变成悬空引用，恢复后落入收件箱。确认文案说明"记录将进入回收站，可在回收站恢复"。
 
 5. **收件箱黄色图标**：`FolderIcon` 加 `text-amber-500`（浅色）+ 深色适配，配"收件箱"文字；有文件夹的仍用 `text-muted-foreground`。
 

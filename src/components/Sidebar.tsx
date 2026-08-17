@@ -296,7 +296,13 @@ export function Sidebar() {
                   <ContextMenuSubContent>
                     <ContextMenuItem
                       onClick={() => {
-                        if (!cat.defaultLanguage || cat.defaultLanguage === 'markdown') return
+                        // markdown 是笔记专用，旧数据残留时点击跟随全局即清理
+                        if (!cat.defaultLanguage || cat.defaultLanguage === 'markdown') {
+                          if (cat.defaultLanguage === 'markdown') {
+                            void setDefaultLanguage(cat._id, '')
+                          }
+                          return
+                        }
                         void setDefaultLanguage(cat._id, '')
                         toast('已恢复跟随全局默认语言')
                       }}
@@ -433,11 +439,11 @@ export function Sidebar() {
             <DialogTitle>删除标签</DialogTitle>
             <DialogDescription>
               {(() => {
-                const n = records.filter(
-                  (r) => !r.deleted && r.tags.includes(deletingTag ?? '')
+                const n = records.filter((r) =>
+                  r.tags.includes(deletingTag ?? '')
                 ).length
                 return n > 0
-                  ? `将从 ${n} 条记录中移除标签 #${deletingTag}，记录本身不会删除。`
+                  ? `将从 ${n} 条记录中移除标签 #${deletingTag}（含回收站记录），记录本身不会删除。`
                   : `标签 #${deletingTag} 下没有记录。`
               })()}
             </DialogDescription>

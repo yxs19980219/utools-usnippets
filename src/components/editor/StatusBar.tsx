@@ -5,7 +5,7 @@
  */
 import { CircleAlertIcon } from 'lucide-react'
 import type { SaveState } from '@/stores/records'
-import { LANGUAGES } from '@/lib/languages'
+import { SNIPPET_LANGUAGES } from '@/lib/languages'
 import {
   Select,
   SelectContent,
@@ -45,7 +45,7 @@ export function StatusBar({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {LANGUAGES.filter((l) => l.value !== 'markdown').map((l) => (
+              {SNIPPET_LANGUAGES.map((l) => (
                 <SelectItem key={l.value} value={l.value}>
                   {l.label}
                 </SelectItem>
