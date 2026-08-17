@@ -149,9 +149,9 @@ const MAIN_WINDOW_HEIGHT = 600
 /** 快捷复制提示：n = 视口内位置 0~9（0 = 第 10 项，显示 Ctrl+0） */
 function ShortcutBadge({ n }: { n: number }) {
   return (
-    <kbd className="shrink-0 rounded border border-border px-1 font-mono text-[9px] text-muted-foreground/70">
+    <span className="shrink-0 self-center text-sm font-medium text-muted-foreground">
       Ctrl+{n === 9 ? '0' : n + 1}
-    </kbd>
+    </span>
   )
 }
 
@@ -208,10 +208,15 @@ function SnippetItem({
             <span className="font-medium">
               {highlight(entry.recordTitle || '未命名', query)}
             </span>
-            {categoryName && (
+            {categoryName ? (
               <span className={cn('pl-1.5 text-[11px]', metaColor)}>
                 <FolderIcon className="mr-0.5 inline size-3" />
                 {categoryName}
+              </span>
+            ) : (
+              <span className={cn('pl-1.5 text-[11px]', metaColor)}>
+                <FolderIcon className="mr-0.5 inline size-3 text-amber-500 dark:text-amber-400" />
+                收件箱
               </span>
             )}
             {scenario && (

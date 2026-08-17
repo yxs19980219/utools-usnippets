@@ -28,7 +28,10 @@ interface RecordsState {
   saveState: SaveState
   load: () => Promise<void>
   /** 新建记录（kind: snippet 默认语言片段 / note 单 markdown 片段），落库后返回（调用方负责选中） */
-  createRecord: (kind?: 'snippet' | 'note') => Promise<PatternRecord | null>
+  createRecord: (
+    kind?: 'snippet' | 'note',
+    options?: { categoryId?: string | null; language?: string }
+  ) => Promise<PatternRecord | null>
   /** 新建笔记（单 markdown 片段） */
   createNote: () => Promise<PatternRecord | null>
   /** 内存更新 + 防抖 1s 落库 */
@@ -45,8 +48,10 @@ interface RecordsState {
   toggleFavorite: (id: string) => Promise<void>
   /** 移动记录到分类（即时落库，不防抖） */
   moveRecord: (id: string, categoryId: string | null) => Promise<void>
-  /** 删除分类时，将其下记录全部置为未分类 */
-  moveCategoryToUncategorized: (categoryId: string) => Promise<void>
+  /** 删除分类时，将其下所有记录移入回收站（软删除，分类归属清空供恢复落收件箱） */
+  moveCategoryToTrash: (categoryId: string) => Promise<void>
+  /** 从所有记录移除指定标签（受影响记录即时落库） */
+  removeTagFromAll: (tag: string) => Promise<number>
   /** 粘贴图片：附件落库 → 返回 markdown 引用（先附件后正文） */
   attachImage: (
     patternId: string,
@@ -83,17 +88,23 @@ export const useRecords = create<RecordsState>((set, get) => ({
     set({ records, loaded: true, saveState: 'idle' })
   },
 
-  createRecord: async (kind = 'snippet') => {
+  createRecord: async (kind = 'snippet', options) => {
     const now = Date.now()
     const defaultLanguage =
       useSettings.getState().defaultLanguage || 'javascript'
-    const language = kind === 'note' ? 'markdown' : defaultLanguage
+    // 片段语言兜底：markdown 是笔记专用（全 markdown = 笔记），片段不可用，
+    // 旧数据可能把默认语言设为 markdown → 回退到全局默认 / JavaScript
+    let language =
+      kind === 'note' ? 'markdown' : (options?.language ?? defaultLanguage)
+    if (kind !== 'note' && language === 'markdown') {
+      language = defaultLanguage === 'markdown' ? 'javascript' : defaultLanguage
+    }
     const record: PatternRecord = {
       _id: `${PATTERN_PREFIX}${uuid()}`,
       title: '',
       scenario: '',
       fragments: [{ id: uuid(), language, content: '' }],
-      categoryId: null,
+      categoryId: options?.categoryId ?? null,
       tags: [],
       favorite: false,
       deleted: false,
@@ -214,11 +225,14 @@ export const useRecords = create<RecordsState>((set, get) => ({
     await enqueue(() => savePattern(record))
   },
 
-  moveCategoryToUncategorized: async (categoryId) => {
+  moveCategoryToTrash: async (categoryId) => {
     const { records } = get()
-    const affected = records.filter((r) => r.categoryId === categoryId)
+    const affected = records.filter(
+      (r) => r.categoryId === categoryId && !r.deleted
+    )
     if (affected.length === 0) return
     for (const r of affected) {
+      r.deleted = true
       r.categoryId = null
       r.updatedAt = Date.now()
     }
@@ -226,6 +240,24 @@ export const useRecords = create<RecordsState>((set, get) => ({
     await enqueue(() =>
       Promise.all(affected.map((r) => savePattern(r)))
     )
+  },
+
+  /** 从所有记录移除指定标签，返回受影响记录数 */
+  removeTagFromAll: async (tag) => {
+    const { records } = get()
+    const affected = records.filter(
+      (r) => !r.deleted && r.tags.includes(tag)
+    )
+    if (affected.length === 0) return 0
+    for (const r of affected) {
+      r.tags = r.tags.filter((t) => t !== tag)
+      r.updatedAt = Date.now()
+    }
+    set({ records: [...records] })
+    await enqueue(() =>
+      Promise.all(affected.map((r) => savePattern(r)))
+    )
+    return affected.length
   },
 
   attachImage: async (patternId, data, mime) => {

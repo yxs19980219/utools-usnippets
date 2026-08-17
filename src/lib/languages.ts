@@ -29,6 +29,11 @@ export const LANGUAGES: LanguageDef[] = [
   { value: 'shell', label: 'Shell' },
 ]
 
+/** 片段可选语言（默认片段语言候选）：排除 markdown —— 笔记固定 markdown，不可作为片段默认 */
+export const SNIPPET_LANGUAGES: LanguageDef[] = LANGUAGES.filter(
+  (l) => l.value !== 'markdown'
+)
+
 export function languageLabel(value: string): string {
   return LANGUAGES.find((l) => l.value === value)?.label ?? value
 }

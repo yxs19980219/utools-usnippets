@@ -9,8 +9,8 @@
  */
 import { useMemo, useState } from 'react'
 import {
+  Code2Icon,
   CopyIcon,
-  FileCode2Icon,
   FileImageIcon,
   FileTextIcon,
   FolderInputIcon,
@@ -153,7 +153,7 @@ function ListItem({
               {meta.isNote ? (
                 <FileTextIcon className="size-3 shrink-0 text-muted-foreground" />
               ) : (
-                <FileCode2Icon className="size-3 shrink-0 text-muted-foreground" />
+                <Code2Icon className="size-3 shrink-0 text-muted-foreground" />
               )}
               <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
                 {record.title || '未命名'}
@@ -280,7 +280,14 @@ export function ListPane() {
   }, [records, view, searchQuery])
 
   const handleNew = async (kind: 'snippet' | 'note') => {
-    const record = await createRecord(kind)
+    // 文件夹视图下新建：自动归入该文件夹，语言用文件夹默认（缺省回退全局）
+    let categoryId: string | null = null
+    let language: string | undefined
+    if (view.type === 'category' && view.id !== null && view.id !== undefined) {
+      categoryId = view.id
+      language = categories.find((c) => c._id === view.id)?.defaultLanguage
+    }
+    const record = await createRecord(kind, { categoryId, language })
     if (record) {
       setSelected(record._id)
       setActiveFragment(record.fragments[0]?.id ?? null)
@@ -339,7 +346,7 @@ export function ListPane() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-28">
           <DropdownMenuItem onSelect={() => void handleNew('snippet')}>
-            <FileCode2Icon className="size-3.5" />
+            <Code2Icon className="size-3.5" />
             片段
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => void handleNew('note')}>

@@ -9,7 +9,7 @@ import { useSettings } from '@/stores/settings'
 import { useRecords } from '@/stores/records'
 import { useCategories } from '@/stores/categories'
 import { useToast } from '@/lib/toast'
-import { LANGUAGES } from '@/lib/languages'
+import { SNIPPET_LANGUAGES } from '@/lib/languages'
 import { exportAllToFile, importFromFile } from '@/lib/import-export'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -105,14 +105,18 @@ export function SettingsDialog() {
           <div className="flex items-center justify-between gap-4">
             <Label>默认语言（新建片段）</Label>
             <Select
-              value={defaultLanguage}
+              value={
+                SNIPPET_LANGUAGES.some((l) => l.value === defaultLanguage)
+                  ? defaultLanguage
+                  : 'javascript'
+              }
               onValueChange={(v) => set({ defaultLanguage: v })}
             >
               <SelectTrigger className="w-44">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {LANGUAGES.map((l) => (
+                {SNIPPET_LANGUAGES.map((l) => (
                   <SelectItem key={l.value} value={l.value}>
                     {l.label}
                   </SelectItem>

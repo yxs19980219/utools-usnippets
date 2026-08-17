@@ -8,6 +8,7 @@
  * 全局搜索态下左栏失效（视觉淡化 + 禁交互）
  */
 import { useState } from 'react'
+import type { HTMLAttributes } from 'react'
 import {
   CheckIcon,
   FolderIcon,
@@ -25,12 +26,16 @@ import { useRecords } from '@/stores/records'
 import { useUi } from '@/stores/ui'
 import { useToast } from '@/lib/toast'
 import { tagCloud } from '@/lib/search'
+import { SNIPPET_LANGUAGES } from '@/lib/languages'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import {
@@ -49,15 +54,17 @@ function NavRow({
   onDrop,
   title,
   children,
+  ...rest
 }: {
   active: boolean
   onClick: () => void
   onDrop?: (e: React.DragEvent) => void
   title: string
   children: React.ReactNode
-}) {
+} & HTMLAttributes<HTMLDivElement>) {
   return (
     <div
+      {...rest}
       onClick={onClick}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
@@ -76,7 +83,9 @@ export function Sidebar() {
   const categories = useCategories((s) => s.categories)
   const createCategory = useCategories((s) => s.create)
   const renameCategory = useCategories((s) => s.rename)
+  const setDefaultLanguage = useCategories((s) => s.setDefaultLanguage)
   const removeCategory = useCategories((s) => s.remove)
+  const removeTagFromAll = useRecords((s) => s.removeTagFromAll)
   const records = useRecords((s) => s.records)
   const moveRecord = useRecords((s) => s.moveRecord)
   const toast = useToast((s) => s.show)
@@ -90,6 +99,8 @@ export function Sidebar() {
   const [renameName, setRenameName] = useState('')
   // 删除确认
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  // 标签删除确认
+  const [deletingTag, setDeletingTag] = useState<string | null>(null)
 
   // 计数均排除回收站记录
   const live = records.filter((r) => !r.deleted)
@@ -128,6 +139,15 @@ export function Sidebar() {
     if (!id) return
     await removeCategory(id)
     if (view.type === 'category' && view.id === id) setView({ type: 'all' })
+  }
+
+  const confirmDeleteTag = async () => {
+    const tag = deletingTag
+    setDeletingTag(null)
+    if (!tag) return
+    const n = await removeTagFromAll(tag)
+    if (view.type === 'tag' && view.id === tag) setView({ type: 'all' })
+    toast(n > 0 ? `已从 ${n} 条记录移除标签 #${tag}` : '该标签下没有记录', n > 0 ? 'info' : 'error')
   }
 
   // 拖拽记录到分类（HTML5 DnD，数据由 ListPane 行写入 dataTransfer）
@@ -269,6 +289,37 @@ export function Sidebar() {
                 >
                   <PencilIcon /> 重命名
                 </ContextMenuItem>
+                <ContextMenuSub>
+                  <ContextMenuSubTrigger>
+                    <FolderIcon /> 默认片段语言
+                  </ContextMenuSubTrigger>
+                  <ContextMenuSubContent>
+                    <ContextMenuItem
+                      onClick={() => {
+                        if (!cat.defaultLanguage || cat.defaultLanguage === 'markdown') return
+                        void setDefaultLanguage(cat._id, '')
+                        toast('已恢复跟随全局默认语言')
+                      }}
+                    >
+                      {(!cat.defaultLanguage || cat.defaultLanguage === 'markdown') && (
+                        <CheckIcon className="size-3.5" />
+                      )}
+                      跟随全局
+                    </ContextMenuItem>
+                    {SNIPPET_LANGUAGES.map((l) => (
+                      <ContextMenuItem
+                        key={l.value}
+                        onClick={() => {
+                          void setDefaultLanguage(cat._id, l.value)
+                          toast(`「${cat.name}」默认语言：${l.label}`)
+                        }}
+                      >
+                        {cat.defaultLanguage === l.value && <CheckIcon className="size-3.5" />}
+                        {l.label}
+                      </ContextMenuItem>
+                    ))}
+                  </ContextMenuSubContent>
+                </ContextMenuSub>
                 <ContextMenuItem
                   variant="destructive"
                   onClick={() => setDeletingId(cat._id)}
@@ -301,24 +352,35 @@ export function Sidebar() {
           <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-1.5">
             <div className="flex flex-col gap-0.5">
               {cloud.map(({ tag, count }) => (
-                <NavRow
-                  key={tag}
-                  active={isTag(tag)}
-                  onClick={() =>
-                    setView(
-                      isTag(tag)
-                        ? { type: 'all' }
-                        : { type: 'tag', id: tag }
-                    )
-                  }
-                  title={`标签 #${tag}`}
-                >
-                  <TagIcon className="size-3 shrink-0 text-muted-foreground" />
-                  <span className="min-w-0 flex-1 truncate">{tag}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {count}
-                  </span>
-                </NavRow>
+                <ContextMenu key={tag}>
+                  <ContextMenuTrigger asChild>
+                    <NavRow
+                      active={isTag(tag)}
+                      onClick={() =>
+                        setView(
+                          isTag(tag)
+                            ? { type: 'all' }
+                            : { type: 'tag', id: tag }
+                        )
+                      }
+                      title={`标签 #${tag}`}
+                    >
+                      <TagIcon className="size-3 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 flex-1 truncate">{tag}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {count}
+                      </span>
+                    </NavRow>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <ContextMenuItem
+                      variant="destructive"
+                      onClick={() => setDeletingTag(tag)}
+                    >
+                      <TrashIcon /> 删除标签
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               ))}
             </div>
           </div>
@@ -336,13 +398,21 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* 删除分类确认 */}
+      {/* 删除分类确认：其下记录移入回收站 */}
       <Dialog open={deletingId !== null} onOpenChange={(open) => !open && setDeletingId(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>删除分类</DialogTitle>
             <DialogDescription>
-              分类下的记录将移入"未分类"，记录本身不会被删除。
+              {(() => {
+                const cat = categories.find((c) => c._id === deletingId)
+                const n = records.filter(
+                  (r) => !r.deleted && r.categoryId === deletingId
+                ).length
+                return n > 0
+                  ? `将删除分类「${cat?.name ?? ''}」，其下 ${n} 条记录将全部移入回收站（可在回收站恢复）。`
+                  : `将删除空分类「${cat?.name ?? ''}」。`
+              })()}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -350,6 +420,33 @@ export function Sidebar() {
               取消
             </Button>
             <Button variant="destructive" onClick={() => void confirmDelete()}>
+              删除
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 删除标签确认：从所有记录移除 */}
+      <Dialog open={deletingTag !== null} onOpenChange={(open) => !open && setDeletingTag(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>删除标签</DialogTitle>
+            <DialogDescription>
+              {(() => {
+                const n = records.filter(
+                  (r) => !r.deleted && r.tags.includes(deletingTag ?? '')
+                ).length
+                return n > 0
+                  ? `将从 ${n} 条记录中移除标签 #${deletingTag}，记录本身不会删除。`
+                  : `标签 #${deletingTag} 下没有记录。`
+              })()}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingTag(null)}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={() => void confirmDeleteTag()}>
               删除
             </Button>
           </DialogFooter>

@@ -18,7 +18,9 @@
   "commit": null,
   "pr_url": null,
   "subtasks": [],
-  "children": [],
+  "children": [
+    "08-17-ui-polish-round"
+  ],
   "parent": null,
   "relatedFiles": [
     ".trellis/spec/backend/",

@@ -1,6 +1,6 @@
 /**
  * stores/categories.ts —— 分类管理
- * 删除分类 → 其下记录回"未分类"（不级联删除）
+ * 删除分类 → 其下记录移入回收站（可恢复，不物理删除）
  */
 import { create } from 'zustand'
 import type { Category } from '../types'
@@ -19,6 +19,7 @@ interface CategoriesState {
   load: () => Promise<void>
   create: (name: string) => Promise<Category | null>
   rename: (id: string, name: string) => Promise<boolean>
+  setDefaultLanguage: (id: string, language: string) => Promise<boolean>
   remove: (id: string) => Promise<void>
 }
 
@@ -59,9 +60,20 @@ export const useCategories = create<CategoriesState>((set, get) => ({
     return true
   },
 
+  setDefaultLanguage: async (id, language) => {
+    const cat = get().categories.find((c) => c._id === id)
+    if (!cat) return false
+    cat.defaultLanguage = language || undefined
+    cat.updatedAt = Date.now()
+    const ok = await saveCategory(cat)
+    if (!ok) return false
+    set({ categories: [...get().categories] })
+    return true
+  },
+
   remove: async (id) => {
-    // 先移走其下记录（回未分类并落库），再删分类
-    await useRecords.getState().moveCategoryToUncategorized(id)
+    // 先将其下记录移入回收站（分类归属清空，恢复后落入收件箱），再删分类
+    await useRecords.getState().moveCategoryToTrash(id)
     const ok = await deleteCategory(id)
     if (!ok) return
     set({ categories: get().categories.filter((c) => c._id !== id) })

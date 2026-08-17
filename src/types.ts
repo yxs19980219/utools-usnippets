@@ -40,6 +40,8 @@ export interface Category {
   _rev?: string
   name: string
   order: number
+  /** 默认片段语言（该文件夹视图下新建片段的语言；缺省时继承全局默认） */
+  defaultLanguage?: string
   createdAt: number
   updatedAt: number
   version: 1
