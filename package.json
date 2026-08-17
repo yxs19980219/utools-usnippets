@@ -17,6 +17,7 @@
     "@codemirror/lang-javascript": "^6.2.2",
     "@codemirror/lang-json": "^6.0.1",
     "@codemirror/lang-markdown": "^6.3.2",
+    "@codemirror/lang-php": "^6.0.2",
     "@codemirror/lang-python": "^6.2.1",
     "@codemirror/lang-sql": "^6.8.0",
     "@codemirror/language": "^6.10.8",
@@ -40,6 +41,7 @@
     "lucide-react": "^0.475.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "simple-icons": "^16.28.0",
     "tailwind-merge": "^2.6.0",
     "zustand": "^5.0.3"
   },

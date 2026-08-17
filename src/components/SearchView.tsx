@@ -11,17 +11,31 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
-  BracesIcon,
   Code2Icon,
   DatabaseIcon,
-  FileCode2Icon,
   FileTextIcon,
   FolderIcon,
-  GlobeIcon,
-  PaletteIcon,
-  TerminalIcon,
-  type LucideIcon,
 } from 'lucide-react'
+import {
+  siC,
+  siCplusplus,
+  siCss,
+  siGo,
+  siHtml5,
+  siJavascript,
+  siJson,
+  siMarkdown,
+  siOpenjdk,
+  siPhp,
+  siPython,
+  siReact,
+  siRuby,
+  siRust,
+  siShell,
+  siTypescript,
+  siYaml,
+  type SimpleIcon,
+} from 'simple-icons'
 import type { SnippetEntry } from '@/lib/search'
 import { buildSnippetEntries, filterSnippets } from '@/lib/search'
 import { copyText } from '@/lib/clipboard'
@@ -31,20 +45,64 @@ import { useRecords } from '@/stores/records'
 import { useCategories } from '@/stores/categories'
 import { cn } from '@/lib/utils'
 
-/** 语言 → lucide 语义图标（无品牌图标，通用映射；未映射回退代码图标） */
-const LANGUAGE_ICONS: Record<string, LucideIcon> = {
+/**
+ * 语言 → 品牌图标（simple-icons 官方包：图标形状 + 官方品牌色 hex 随包维护，
+ * 无需手动抄色；无品牌的语言回退 lucide 语义图标 + 自定义兜底色）
+ */
+const SIMPLE_ICONS: Record<string, SimpleIcon> = {
+  javascript: siJavascript,
+  typescript: siTypescript,
+  jsx: siReact,
+  tsx: siTypescript,
+  html: siHtml5,
+  css: siCss,
+  json: siJson,
+  python: siPython,
+  java: siOpenjdk,
+  c: siC,
+  cpp: siCplusplus,
+  go: siGo,
+  rust: siRust,
+  php: siPhp,
+  ruby: siRuby,
+  yaml: siYaml,
+  markdown: siMarkdown,
+  shell: siShell,
+}
+
+/** 无品牌语言的兜底色（simple-icons 之外的语义图标） */
+const FALLBACK_BRAND: Record<string, { bg: string; fg: string }> = {
+  sql: { bg: '#4479A1', fg: '#fff' },
+}
+
+/** 无品牌语言的兜底图标（lucide 语义图标） */
+const FALLBACK_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   plaintext: FileTextIcon,
-  javascript: BracesIcon,
-  typescript: BracesIcon,
-  jsx: BracesIcon,
-  tsx: BracesIcon,
-  html: GlobeIcon,
-  css: PaletteIcon,
-  json: BracesIcon,
   sql: DatabaseIcon,
-  python: FileCode2Icon,
-  markdown: FileTextIcon,
-  shell: TerminalIcon,
+}
+
+/** hex 亮度反色：浅底黑图标、深底白图标（YIQ 近似亮度） */
+function contrastFg(hex: string): string {
+  const r = parseInt(hex.slice(0, 2), 16)
+  const g = parseInt(hex.slice(2, 4), 16)
+  const b = parseInt(hex.slice(4, 6), 16)
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000
+  return yiq >= 150 ? '#000' : '#fff'
+}
+
+/** simple-icons 矢量渲染（fill currentColor，颜色由外层控制） */
+function BrandIcon({ icon, className }: { icon: SimpleIcon; className?: string }) {
+  return (
+    <svg
+      role="img"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-label={icon.title}
+    >
+      <path d={icon.path} />
+    </svg>
+  )
 }
 
 /** 命中高亮：大小写不敏感，把 text 拆成 segments，命中段包 <mark> */
@@ -94,7 +152,11 @@ function SnippetItem({
 }) {
   const scenario = firstLine(entry.recordScenario)
   const metaColor = active ? 'text-accent-foreground/70' : 'text-muted-foreground'
-  const LangIcon = LANGUAGE_ICONS[entry.language] ?? Code2Icon
+  const simple = SIMPLE_ICONS[entry.language]
+  const FallbackIcon = FALLBACK_ICONS[entry.language] ?? Code2Icon
+  const brand = simple
+    ? { bg: `#${simple.hex}`, fg: contrastFg(simple.hex) }
+    : FALLBACK_BRAND[entry.language]
   return (
     <div
       data-index={index}
@@ -108,9 +170,19 @@ function SnippetItem({
           : 'hover:bg-accent/60 hover:text-accent-foreground',
       )}
     >
-      {/* 语言方徽标：绿底白图标，横跨两行 */}
-      <div className="flex w-9 shrink-0 items-center justify-center self-stretch rounded-md bg-emerald-600 text-white">
-        <LangIcon className="size-4" />
+      {/* 语言方徽标：品牌色背景 + 反色图标，横跨两行；无品牌色走中性灰 */}
+      <div
+        className={cn(
+          'flex w-9 shrink-0 items-center justify-center self-stretch rounded-md',
+          !brand && 'bg-muted text-muted-foreground',
+        )}
+        style={brand ? { backgroundColor: brand.bg, color: brand.fg } : undefined}
+      >
+        {simple ? (
+          <BrandIcon icon={simple} className="size-4" />
+        ) : (
+          <FallbackIcon className="size-4" />
+        )}
       </div>
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
         {/* 行 1：标题（粗）· 备注截断… · ●片段名 */}

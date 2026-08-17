@@ -52,6 +52,41 @@ Questions to answer:
 
 ---
 
+## Design Decision: 语言品牌图标来自 simple-icons 官方包（形状 + 品牌色随包维护）
+
+**Context**: 搜索视图每条结果左侧需要语言标识。第一版用 lucide 通用语义图标（花括号/终端等），无语言辨识度；第二版引入 react-icons（Simple Icons 品牌集），但颜色是手抄的 hex 静态表（`LANGUAGE_BRAND`），换包版本/加新语言时颜色不会自动同步，且 Shell 等官方色曾抄错（`#FFE484` vs 官方 `#FFD500`）。
+
+**Options Considered**:
+1. react-icons（`react-icons/si`）—— 只有形状，无 hex 元数据，颜色仍需手维护
+2. **simple-icons 官方包（采用）**：每个图标导出含 `title` / `slug` / `path`（矢量路径）/ `hex`（官方品牌色）/ `license`
+3. 自绘 SVG —— 维护成本最高
+
+**Decision**: 品牌图标一律从 `simple-icons` 命名导入（`siJavascript`、`siPython`…），形状与颜色都取自包内元数据，不手写颜色表。模式要点（`src/components/SearchView.tsx`）：
+
+```tsx
+// 1. 语言 → 图标对象映射（仅语义映射，无颜色）
+const SIMPLE_ICONS: Record<string, SimpleIcon> = {
+  javascript: siJavascript,
+  python: siPython,
+  // jsx → siReact（JSX 无独立品牌图标）
+  // java → siOpenjdk（simple-icons 已移除 Java 商标，用 OpenJDK）
+}
+
+// 2. 品牌色 = 图标 hex 元数据；图标反色按 YIQ 亮度自动判断（浅底黑图标/深底白图标）
+const brand = { bg: `#${icon.hex}`, fg: contrastFg(icon.hex) }
+
+// 3. 无品牌语言兜底：FALLBACK_BRAND 自定义色（sql） + FALLBACK_ICONS lucide 语义图标（sql/plaintext）
+```
+
+**新增语言时的三处同步**（缺一不可）：
+1. `src/lib/languages.ts` LANGUAGES（设置/状态栏下拉）
+2. `src/components/editor/CodeBlock.tsx` languageExtension（编辑器高亮；官方包 `@codemirror/lang-*`，缺失时用 `@codemirror/legacy-modes` 的 StreamLanguage）
+3. `src/components/SearchView.tsx` SIMPLE_ICONS（搜索视图徽标）
+
+**Extensibility**: simple-icons 官方维护颜色与形状，升级包即可获得修正；打包验证过按需 import 可 tree-shake（3453 个图标只打入用到的）。
+
+---
+
 ## Design Decision: 编辑器用 atomic 底层组合而非 React wrapper
 
 **Context**: 二期需要把 markdown 编辑器升级为 Obsidian 式即时渲染（@atomic-editor/editor）。官方提供 React wrapper（`AtomicEditor`），但它无法注入自定义图片 resolver（图片需从 utools.db 附件异步解析为 blob URL），且 wrapper 不支持 live-md math 扩展的按需 import 与 tree-shake。

@@ -36,8 +36,14 @@ import { css } from '@codemirror/lang-css'
 import { json } from '@codemirror/lang-json'
 import { sql } from '@codemirror/lang-sql'
 import { python } from '@codemirror/lang-python'
+import { php } from '@codemirror/lang-php'
 import { StreamLanguage } from '@codemirror/language'
 import { shell } from '@codemirror/legacy-modes/mode/shell'
+import { go } from '@codemirror/legacy-modes/mode/go'
+import { rust } from '@codemirror/legacy-modes/mode/rust'
+import { ruby } from '@codemirror/legacy-modes/mode/ruby'
+import { yaml } from '@codemirror/legacy-modes/mode/yaml'
+import { c, cpp, java } from '@codemirror/legacy-modes/mode/clike'
 import { oneDark } from '@codemirror/theme-one-dark'
 
 export interface CodeBlockProps {
@@ -69,6 +75,22 @@ function languageExtension(language: string) {
       return [sql()]
     case 'python':
       return [python()]
+    case 'java':
+      return [StreamLanguage.define(java)]
+    case 'c':
+      return [StreamLanguage.define(c)]
+    case 'cpp':
+      return [StreamLanguage.define(cpp)]
+    case 'go':
+      return [StreamLanguage.define(go)]
+    case 'rust':
+      return [StreamLanguage.define(rust)]
+    case 'php':
+      return [php()]
+    case 'ruby':
+      return [StreamLanguage.define(ruby)]
+    case 'yaml':
+      return [StreamLanguage.define(yaml)]
     case 'markdown':
       return [markdown()]
     case 'shell':
