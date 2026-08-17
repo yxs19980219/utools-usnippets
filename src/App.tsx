@@ -71,7 +71,7 @@ export default function App() {
       // 窗口高度不干预：默认 800×600（plugin.json），用户手动拉伸后由 uTools 记忆
       ut.setSubInput?.(
         ({ text }) => useUi.getState().setSearchQuery(text),
-        '搜索模式库：标题 / 场景 / 标签 / 正文…',
+        '搜索模式库：标题、备注、标签、正文',
         true,
       )
     })

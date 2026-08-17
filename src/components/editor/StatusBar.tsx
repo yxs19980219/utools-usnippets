@@ -56,7 +56,7 @@ export function StatusBar({
         <span>{lineCount} 行</span>
       </div>
 
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto">
+      <div className="relative flex min-w-0 flex-1 items-center justify-end gap-1 overflow-visible">
         <TagEditor tags={tags} onAdd={onAddTag} onRemove={onRemoveTag} />
       </div>
 

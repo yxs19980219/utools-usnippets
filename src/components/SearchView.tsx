@@ -149,7 +149,7 @@ const MAIN_WINDOW_HEIGHT = 600
 /** 快捷复制提示：n = 视口内位置 0~9（0 = 第 10 项，显示 Ctrl+0） */
 function ShortcutBadge({ n }: { n: number }) {
   return (
-    <span className="shrink-0 self-center text-base font-medium text-muted-foreground">
+    <span className="flex shrink-0 items-center self-center pl-2 text-[17px] font-medium text-muted-foreground opacity-60">
       Ctrl+{n === 9 ? '0' : n + 1}
     </span>
   )
@@ -184,7 +184,7 @@ function SnippetItem({
       data-index={index}
       onMouseEnter={onHover}
       className={cn(
-        'flex h-[49px] shrink-0 gap-2.5 px-2 py-[5px] text-left transition-colors',
+        'flex h-[49px] shrink-0 items-center gap-2.5 px-2 py-[5px] text-left transition-colors',
         active
           ? 'bg-accent text-accent-foreground'
           : 'hover:bg-accent/60 hover:text-accent-foreground',
@@ -202,7 +202,7 @@ function SnippetItem({
         )}
       </div>
       <div className="flex min-w-0 flex-1 flex-col justify-center">
-        {/* 行 1：标题（15px 粗）· 📁文件夹 · 📝备注（11px） + 右侧快捷键 */}
+        {/* 行 1：标题（15px 粗）· 📁文件夹 · 📝备注（11px） */}
         <div className="flex min-w-0 items-center gap-2 text-[15px] leading-[22px]">
           <span className="min-w-0 flex-1 truncate">
             <span className="font-medium">
@@ -226,7 +226,6 @@ function SnippetItem({
               </span>
             )}
           </span>
-          {inViewport && <ShortcutBadge n={index - viewportStart} />}
         </div>
         {/* 行 2：语言名 · ●片段名 · 标签（图标 + 蓝底） */}
         <div className="flex min-w-0 items-center gap-1.5 text-[11px] leading-[17px]">
@@ -252,6 +251,7 @@ function SnippetItem({
           )}
         </div>
       </div>
+      {inViewport && <ShortcutBadge n={index - viewportStart} />}
     </div>
   )
 }
@@ -266,7 +266,7 @@ export function SearchView() {
   useEffect(() => {
     window.utools?.setSubInput?.(
       ({ text }) => setQuery(text),
-      '搜索片段：内容 / 标题 / 场景 / 标签…',
+      '输入关键词搜索，↑↓选择，Ctrl+数字/C复制，Enter 插入当前光标',
       true,
     )
     return () => {
