@@ -8,15 +8,44 @@
  * - 复制：单击 copyText 复制到剪贴板（可连续复制，留在视图）
  * - 纯复制定位：不做 toast、不进入编辑区、无管理操作
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import {
+  BracesIcon,
+  Code2Icon,
+  DatabaseIcon,
+  FileCode2Icon,
+  FileTextIcon,
+  FolderIcon,
+  GlobeIcon,
+  PaletteIcon,
+  TerminalIcon,
+  type LucideIcon,
+} from 'lucide-react'
 import type { SnippetEntry } from '@/lib/search'
-import { buildSnippetEntries, filterSnippets, previewSnippet } from '@/lib/search'
+import { buildSnippetEntries, filterSnippets } from '@/lib/search'
 import { copyText } from '@/lib/clipboard'
 import { languageLabel } from '@/lib/languages'
+import { firstLine } from '@/types'
 import { useRecords } from '@/stores/records'
-import { Badge } from '@/components/ui/badge'
+import { useCategories } from '@/stores/categories'
 import { cn } from '@/lib/utils'
+
+/** 语言 → lucide 语义图标（无品牌图标，通用映射；未映射回退代码图标） */
+const LANGUAGE_ICONS: Record<string, LucideIcon> = {
+  plaintext: FileTextIcon,
+  javascript: BracesIcon,
+  typescript: BracesIcon,
+  jsx: BracesIcon,
+  tsx: BracesIcon,
+  html: GlobeIcon,
+  css: PaletteIcon,
+  json: BracesIcon,
+  sql: DatabaseIcon,
+  python: FileCode2Icon,
+  markdown: FileTextIcon,
+  shell: TerminalIcon,
+}
 
 /** 命中高亮：大小写不敏感，把 text 拆成 segments，命中段包 <mark> */
 function highlight(text: string, query: string): ReactNode {
@@ -45,11 +74,13 @@ function highlight(text: string, query: string): ReactNode {
   return parts
 }
 
+/** 平铺片段条目：语言方徽标（跨两行）+ 行 1 标题·备注 + ●片段名；行 2 语言全称·文件夹·标签 */
 function SnippetItem({
   entry,
   index,
   query,
   active,
+  categoryName,
   onHover,
   onCopy,
 }: {
@@ -57,40 +88,71 @@ function SnippetItem({
   index: number
   query: string
   active: boolean
+  categoryName?: string
   onHover: () => void
   onCopy: () => void
 }) {
+  const scenario = firstLine(entry.recordScenario)
+  const metaColor = active ? 'text-accent-foreground/70' : 'text-muted-foreground'
+  const LangIcon = LANGUAGE_ICONS[entry.language] ?? Code2Icon
   return (
     <div
       data-index={index}
       onClick={onCopy}
       onMouseEnter={onHover}
       className={cn(
-        'cursor-pointer flex-col gap-0.5 rounded-md border px-2 py-1.5 text-left transition-colors',
-        'flex',
+        'flex cursor-pointer gap-1.5 px-1.5 py-1.5 text-left transition-colors',
+        index > 0 && 'border-t border-border',
         active
-          ? 'border-border bg-accent text-accent-foreground'
-          : 'border-transparent hover:bg-accent/60 hover:text-accent-foreground',
+          ? 'bg-accent text-accent-foreground'
+          : 'hover:bg-accent/60 hover:text-accent-foreground',
       )}
     >
-      {/* 第一行：组首显示「记录标题 · 片段名」，其余缩进显示片段名；右侧语言徽标 */}
-      <div className="flex items-center gap-1.5">
-        {entry.groupStart ? (
-          <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
-            {entry.recordTitle || '未命名'} · {entry.name}
-          </span>
-        ) : (
-          <span className="min-w-0 flex-1 truncate pl-3 text-xs text-muted-foreground">
-            {entry.name}
-          </span>
-        )}
-        <Badge variant="outline" className="shrink-0 text-[10px]">
-          {languageLabel(entry.language)}
-        </Badge>
+      {/* 语言方徽标：绿底白图标，横跨两行 */}
+      <div className="flex w-9 shrink-0 items-center justify-center self-stretch rounded-md bg-emerald-600 text-white">
+        <LangIcon className="size-4" />
       </div>
-      {/* 第二行：内容预览（前 3 行，超长截断），命中词高亮 */}
-      <div className="whitespace-pre-wrap break-all font-mono text-xs leading-relaxed text-muted-foreground line-clamp-2">
-        {highlight(previewSnippet(entry.content), query)}
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+        {/* 行 1：标题（粗）· 备注截断… · ●片段名 */}
+        <div className="flex items-center gap-1.5">
+          <span className="min-w-0 flex-1 truncate text-[13px]">
+            <span className="font-medium">
+              {highlight(entry.recordTitle || '未命名', query)}
+            </span>
+            {scenario && (
+              <span className={metaColor}>
+                {' · '}
+                {highlight(scenario, query)}
+              </span>
+            )}
+          </span>
+          <span className="flex shrink-0 items-center gap-1 text-xs">
+            <span className="size-2 rounded-full bg-emerald-500" />
+            <span className={metaColor}>{highlight(entry.name, query)}</span>
+          </span>
+        </div>
+        {/* 行 2：语言全称 · 文件夹 · 标签 */}
+        <div className="flex min-w-0 items-center gap-2 text-xs">
+          <span className={cn('shrink-0', metaColor)}>
+            {languageLabel(entry.language)}
+          </span>
+          {categoryName && (
+            <span className={cn('flex shrink-0 items-center gap-0.5', metaColor)}>
+              <FolderIcon className="size-3" />
+              <span>{categoryName}</span>
+            </span>
+          )}
+          {entry.recordTags.length > 0 && (
+            <span className={cn('min-w-0 truncate', metaColor)}>
+              {entry.recordTags.map((t, i) => (
+                <Fragment key={i}>
+                  {i > 0 && ' '}
+                  {highlight(`#${t}`, query)}
+                </Fragment>
+              ))}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -98,6 +160,7 @@ function SnippetItem({
 
 export function SearchView() {
   const records = useRecords((s) => s.records)
+  const categories = useCategories((s) => s.categories)
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const listRef = useRef<HTMLDivElement>(null)
@@ -119,6 +182,12 @@ export function SearchView() {
     () => filterSnippets(entries, query),
     [entries, query],
   )
+
+  // 连续同记录片段聚为一组（entries 按记录序展平、过滤后仍相邻），并记录组内起始全局下标
+  const categoryNameById = useMemo(() => {
+    const map = new Map(categories.map((c) => [c._id, c.name]))
+    return (id: string | null) => (id ? map.get(id) : undefined)
+  }, [categories])
 
   // activeIndex 越界保护（列表变化 / query 过滤后）
   useEffect(() => {
@@ -176,7 +245,7 @@ export function SearchView() {
             {empty ? '还没有可复制的代码片段' : '没有匹配的片段'}
           </div>
         ) : (
-          <div className="space-y-0.5">
+          <div>
             {filtered.map((entry, index) => (
               <SnippetItem
                 key={`${entry.recordId}:${entry.fragmentId}`}
@@ -184,6 +253,7 @@ export function SearchView() {
                 index={index}
                 query={query}
                 active={activeIndex === index}
+                categoryName={categoryNameById(entry.categoryId)}
                 onHover={() => setActiveIndex(index)}
                 onCopy={() => copyText(entry.content)}
               />

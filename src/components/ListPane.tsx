@@ -65,6 +65,8 @@ function byView(records: PatternRecord[], view: ViewState): PatternRecord[] {
       return records.filter((r) => r.favorite && !r.deleted)
     case 'trash':
       return records.filter((r) => r.deleted)
+    case 'inbox':
+      return records.filter((r) => !r.deleted && r.categoryId === null)
     case 'category':
       return records.filter(
         (r) => !r.deleted && r.categoryId === (view.id ?? null)
@@ -84,6 +86,8 @@ function viewLabel(view: ViewState, count: number, categoryName?: string) {
       return `收藏 · ${count} 条`
     case 'trash':
       return `回收站 · ${count} 条`
+    case 'inbox':
+      return `收件箱 · ${count} 条`
     case 'category':
       return `${view.id === null ? '未分类' : (categoryName ?? '分类')} · ${count} 条`
     case 'tag':

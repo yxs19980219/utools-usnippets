@@ -11,6 +11,8 @@ export interface SnippetEntry {
   recordTitle: string
   recordScenario: string
   recordTags: string[]
+  /** 所属分类 id（null = 未分类），展示所属文件夹 */
+  categoryId: string | null
   fragmentId: string
   /** 片段在记录内的下标（组内排序，展示"片段 N"） */
   fragmentIndex: number
@@ -39,6 +41,7 @@ export function buildSnippetEntries(records: PatternRecord[]): SnippetEntry[] {
         recordTitle: record.title,
         recordScenario: record.scenario,
         recordTags: record.tags,
+        categoryId: record.categoryId,
         fragmentId: fragment.id,
         fragmentIndex: index,
         name: fragment.name ?? `片段 ${index + 1}`,

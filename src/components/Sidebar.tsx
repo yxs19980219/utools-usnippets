@@ -2,8 +2,8 @@
  * components/Sidebar.tsx —— 左栏（masscode 式导航）
  *
  * 结构：
- * - 库：所有 / 收藏 / 回收站
- * - 文件夹：未分类 + 用户自建分类（右键改名/删除、记录拖拽移动）
+ * - 库：所有 / 收件箱 / 收藏 / 回收站
+ * - 文件夹：用户自建分类（右键改名/删除、记录拖拽移动），未分类归收件箱
  * - 标签：标签云（点击筛选）
  * 全局搜索态下左栏失效（视觉淡化 + 禁交互）
  */
@@ -11,6 +11,7 @@ import { useState } from 'react'
 import {
   CheckIcon,
   FolderIcon,
+  InboxIcon,
   PencilIcon,
   PlusIcon,
   SettingsIcon,
@@ -97,7 +98,7 @@ export function Sidebar() {
   const trashCount = records.filter((r) => r.deleted).length
   const cloud = tagCloud(live)
 
-  const isView = (type: 'all' | 'favorites' | 'trash') =>
+  const isView = (type: 'all' | 'inbox' | 'favorites' | 'trash') =>
     view.type === type
   const isCategory = (id: string | null) =>
     view.type === 'category' && view.id === id
@@ -152,6 +153,16 @@ export function Sidebar() {
           <FolderIcon className="size-3.5 shrink-0 text-muted-foreground" />
           <span className="min-w-0 flex-1 truncate">所有</span>
           <span className="text-xs text-muted-foreground">{live.length}</span>
+        </NavRow>
+        <NavRow
+          active={isView('inbox')}
+          onClick={() => setView({ type: 'inbox' })}
+          onDrop={handleDrop(null)}
+          title="未分类记录（新建片段默认落这里，可拖入）"
+        >
+          <InboxIcon className="size-3.5 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 flex-1 truncate">收件箱</span>
+          <span className="text-xs text-muted-foreground">{uncategorizedCount}</span>
         </NavRow>
         <NavRow
           active={isView('favorites')}
@@ -212,20 +223,7 @@ export function Sidebar() {
           </div>
         )}
 
-        {/* 未分类固定首项 */}
-        <NavRow
-          active={isCategory(null)}
-          onClick={() => setView({ type: 'category', id: null })}
-          onDrop={handleDrop(null)}
-          title="未分类记录（可拖入）"
-        >
-          <FolderIcon className="size-3.5 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 flex-1 truncate">未分类</span>
-          <span className="text-xs text-muted-foreground">
-            {uncategorizedCount}
-          </span>
-        </NavRow>
-
+        {/* 未分类记录收编进库组"收件箱"，此处仅渲染用户自建分类 */}
         {categories.map((cat) =>
           renamingId === cat._id ? (
             <div key={cat._id} className="flex items-center gap-1 px-2 py-0.5">

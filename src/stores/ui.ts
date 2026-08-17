@@ -9,7 +9,13 @@
 import { create } from 'zustand'
 
 /** 左栏导航视图 */
-export type ViewType = 'all' | 'favorites' | 'trash' | 'category' | 'tag'
+export type ViewType =
+  | 'all'
+  | 'inbox'
+  | 'favorites'
+  | 'trash'
+  | 'category'
+  | 'tag'
 
 export interface ViewState {
   type: ViewType
