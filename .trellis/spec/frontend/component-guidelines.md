@@ -72,10 +72,10 @@ const SIMPLE_ICONS: Record<string, SimpleIcon> = {
   // java → siOpenjdk（simple-icons 已移除 Java 商标，用 OpenJDK）
 }
 
-// 2. 品牌色 = 图标 hex 元数据；图标反色按 YIQ 亮度自动判断（浅底黑图标/深底白图标）
-const brand = { bg: `#${icon.hex}`, fg: contrastFg(icon.hex) }
+// 2. 品牌色 = 图标 hex 元数据，图标无底色直接用品牌色填充（品牌原生形状完整展示）
+const iconColor = `#${icon.hex}`
 
-// 3. 无品牌语言兜底：FALLBACK_BRAND 自定义色（sql） + FALLBACK_ICONS lucide 语义图标（sql/plaintext）
+// 3. 无品牌语言兜底：FALLBACK_COLOR 自定义色（sql）+ FALLBACK_ICONS lucide 语义图标（sql/plaintext）
 ```
 
 **新增语言时的三处同步**（缺一不可）：

@@ -71,33 +71,36 @@ const SIMPLE_ICONS: Record<string, SimpleIcon> = {
 }
 
 /** 无品牌语言的兜底色（simple-icons 之外的语义图标） */
-const FALLBACK_BRAND: Record<string, { bg: string; fg: string }> = {
-  sql: { bg: '#4479A1', fg: '#fff' },
+const FALLBACK_COLOR: Record<string, string> = {
+  sql: '#4479A1',
 }
 
 /** 无品牌语言的兜底图标（lucide 语义图标） */
-const FALLBACK_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+const FALLBACK_ICONS: Record<
+  string,
+  React.ComponentType<{ className?: string; style?: React.CSSProperties }>
+> = {
   plaintext: FileTextIcon,
   sql: DatabaseIcon,
 }
 
-/** hex 亮度反色：浅底黑图标、深底白图标（YIQ 近似亮度） */
-function contrastFg(hex: string): string {
-  const r = parseInt(hex.slice(0, 2), 16)
-  const g = parseInt(hex.slice(2, 4), 16)
-  const b = parseInt(hex.slice(4, 6), 16)
-  const yiq = (r * 299 + g * 587 + b * 114) / 1000
-  return yiq >= 150 ? '#000' : '#fff'
-}
-
 /** simple-icons 矢量渲染（fill currentColor，颜色由外层控制） */
-function BrandIcon({ icon, className }: { icon: SimpleIcon; className?: string }) {
+function BrandIcon({
+  icon,
+  className,
+  style,
+}: {
+  icon: SimpleIcon
+  className?: string
+  style?: React.CSSProperties
+}) {
   return (
     <svg
       role="img"
       viewBox="0 0 24 24"
       fill="currentColor"
       className={className}
+      style={style}
       aria-label={icon.title}
     >
       <path d={icon.path} />
@@ -154,9 +157,7 @@ function SnippetItem({
   const metaColor = active ? 'text-accent-foreground/70' : 'text-muted-foreground'
   const simple = SIMPLE_ICONS[entry.language]
   const FallbackIcon = FALLBACK_ICONS[entry.language] ?? Code2Icon
-  const brand = simple
-    ? { bg: `#${simple.hex}`, fg: contrastFg(simple.hex) }
-    : FALLBACK_BRAND[entry.language]
+  const iconColor = simple ? `#${simple.hex}` : FALLBACK_COLOR[entry.language]
   return (
     <div
       data-index={index}
@@ -170,18 +171,15 @@ function SnippetItem({
           : 'hover:bg-accent/60 hover:text-accent-foreground',
       )}
     >
-      {/* 语言方徽标：品牌色背景 + 反色图标，横跨两行；无品牌色走中性灰 */}
-      <div
-        className={cn(
-          'flex w-9 shrink-0 items-center justify-center self-stretch rounded-md',
-          !brand && 'bg-muted text-muted-foreground',
-        )}
-        style={brand ? { backgroundColor: brand.bg, color: brand.fg } : undefined}
-      >
+      {/* 语言图标：品牌原生形状 + 品牌色（无底），横跨两行；无品牌色走 muted */}
+      <div className="flex w-6 shrink-0 items-center justify-center self-stretch">
         {simple ? (
-          <BrandIcon icon={simple} className="size-4" />
+          <BrandIcon icon={simple} className="size-5" style={{ color: iconColor }} />
         ) : (
-          <FallbackIcon className="size-4" />
+          <FallbackIcon
+            className={cn('size-5', !iconColor && 'text-muted-foreground')}
+            style={iconColor ? { color: iconColor } : undefined}
+          />
         )}
       </div>
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
