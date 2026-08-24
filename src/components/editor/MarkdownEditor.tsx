@@ -158,7 +158,7 @@ export const MarkdownEditor = forwardRef<
     const el = containerRef.current
     if (!el) return
 
-    // 图片 resolver：att:// 未预取到 blob → null（回退源码显示）；非附件直通
+    // 图片 resolver：att:// 未预取到 blob → null（显示占位 widget）；非附件直通
     const resolveImage = (src: string): string | null | undefined => {
       const attId = resolveAttRef(src)
       if (!attId) return undefined

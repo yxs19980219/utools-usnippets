@@ -90,11 +90,59 @@ class ImageWidget extends WidgetType {
   }
 }
 
+/**
+ * blob 预取中的占位 widget：resolve 未命中时替代"跳过 widget"。
+ * 源码行已被 inline-preview 隐藏，跳过 widget 会让整行空置（"完全空白"形态）。
+ * blob 就绪后 refresh 重建，占位被 ImageWidget 替换；点击占位回源行。
+ */
+class ImagePlaceholderWidget extends WidgetType {
+  constructor(
+    private src: string,
+    private alt: string
+  ) {
+    super()
+  }
+
+  eq(other: ImagePlaceholderWidget) {
+    return other.src === this.src && other.alt === this.alt
+  }
+
+  toDOM(view: EditorView) {
+    const wrap = document.createElement('div')
+    wrap.className = 'cm-atomic-image cm-atomic-image-pending'
+    wrap.style.cssText =
+      'display:flex;align-items:center;justify-content:center;' +
+      'min-height:3em;margin:0.35em 0;border:1px dashed #8884;' +
+      'border-radius:0.4em;color:#888;font-size:0.9em;opacity:0.75;'
+    const span = document.createElement('span')
+    span.textContent = '图片加载中…'
+    wrap.appendChild(span)
+    const onPointer = (event: MouseEvent) => {
+      event.preventDefault()
+      event.stopPropagation()
+      const pos = view.posAtDOM(wrap)
+      if (pos < 0) return
+      const target = Math.max(0, pos - 1)
+      view.focus()
+      view.dispatch({
+        selection: { anchor: target },
+        scrollIntoView: false,
+      })
+    }
+    wrap.addEventListener('mousedown', onPointer)
+    return wrap
+  }
+
+  ignoreEvent(event: Event) {
+    return event.type === 'mousedown' || event.type === 'click'
+  }
+}
+
 function buildImageBlocks(
   state: Parameters<typeof ensureSyntaxTree>[0],
   resolve?: ImageBlocksConfig['resolve']
 ) {
-  const ranges: { from: number; to: number; widget: ImageWidget }[] = []
+  const ranges: { from: number; to: number; widget: WidgetType }[] = []
   // 全文解析（200ms 预算），保证长文档底部图片也能 widget 化
   const tree =
     ensureSyntaxTree(state, state.doc.length, 200) ?? syntaxTree(state)
@@ -111,7 +159,17 @@ function buildImageBlocks(
       const [, alt, src] = match
       if (!src) return
       const resolved = resolve?.(src)
-      if (resolved === null) return // 解析失败 → 回退源码显示
+      if (resolved === null) {
+        // 解析中（blob 预取未完成）→ 占位 widget；blob 就绪后 refresh 重建换真图。
+        // 若直接跳过，源码行已被 inline-preview 隐藏 → 整行空白
+        const line = state.doc.lineAt(node.from)
+        ranges.push({
+          from: line.to,
+          to: line.to,
+          widget: new ImagePlaceholderWidget(src, alt),
+        })
+        return
+      }
       const displaySrc = resolved ?? src
       const line = state.doc.lineAt(node.from)
       ranges.push({

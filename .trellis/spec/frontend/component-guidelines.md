@@ -199,6 +199,28 @@ function EditorPane({ record }: Props) {
 
 **Prevention**: 规则：**组件内所有 hooks 必须无条件执行**，条件返回只能在全部 hooks 之后
 
+### 引用解析函数的"前缀假设"必须对齐（正则捕获组 vs 解析函数）
+
+**Symptom**: 粘贴图片后 markdown 编辑区完全空白（预取扫描恒为空集，图片永不渲染）；连带删除记录的孤儿附件清理、JSON 导入导出、图片导出全部静默失效。控制台无任何报错（数据流静默短路）。
+
+**Cause**: `ATT_REF_RE` 的捕获组本来已剥去 `att://` 前缀（`att:\/\/([^)]+)` → `pattern/xxx/img-123`），却把 `m[1]` 喂给期望含前缀的 `resolveAttRef`（`/^att:\/\/(.+)$/`）→ 恒 `null` → `scanAttachmentRefs` 恒返回 `[]`。正则、字符串、调用点全都"看起来正确"，只有接口约定错位。
+
+**Fix**: 捕获组包含完整 URI，让 `resolveAttRef` 保持"URI→id"单一职责：
+
+```typescript
+// Wrong —— 捕获组剥前缀，喂给期望含前缀的消费函数
+// ATT_REF_RE = /!\[[^\]]*\]\(att:\/\/([^)]+)\)/g
+// resolveAttRef(m[1])  → m[1]='pattern/…' 匹配 /^att:\/\/(.+)$/ 失败 → null
+
+// Correct —— 捕获组含 att:// 前缀，resolveAttRef 负责剥离校验
+// ATT_REF_RE = /!\[[^\]]*\]\((att:\/\/[^)]+)\)/g
+// resolveAttRef(m[1]) → m[1]='att://pattern/…' → 'pattern/…'
+```
+
+**Prevention**:
+1. 写"正则解析引用"代码时，明确一条规则：**捕获组只做"提取"，前缀归属由单一函数决定；捕获组与消费函数的输入假设必须逐字对齐**（写一条单测/console 冒烟即验证）。
+2. 引用链路涉及多个消费方（渲染预取/删除清理/导出枚举）时，**任一消费方正常工作不代表链路健康**——本 bug 正是"渲染坏了而清理看似正常"的静默形式，给 `scanAttachmentRefs` 补一行冒烟断言可提前暴露。
+
 ---
 
 ## 教训：『像主界面一样顶部搜索框』= setSubInput + document 级 keydown（勿绕道 mainPush / 页面内输入框）

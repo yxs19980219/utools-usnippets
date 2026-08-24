@@ -56,8 +56,8 @@ export const UNCATEGORIZED = '__uncat__'
 /** 附件 id 前缀：pattern/<patternId>/img-<ts> */
 export const ATTACHMENT_PREFIX = 'pattern/'
 
-/** 附件引用正则：![](att://<id>) */
-export const ATT_REF_RE = /!\[[^\]]*\]\(att:\/\/([^)]+)\)/g
+/** 附件引用正则：![](att://<id>)（捕获组含 att:// 前缀，由 resolveAttRef 剥离校验） */
+export const ATT_REF_RE = /!\[[^\]]*\]\((att:\/\/[^)]+)\)/g
 
 export function isNote(record: PatternRecord): boolean {
   // 类型推断：fragments 全部为 markdown ⇒ 笔记，否则片段
