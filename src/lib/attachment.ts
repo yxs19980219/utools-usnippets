@@ -23,15 +23,28 @@ export function scanAttachmentRefs(content: string): string[] {
 }
 
 /**
+ * 附件 blob URL + 生命周期（revoke 与 create 同源，避免 URL 泄漏）
+ * 调用方持有 ref，用完（组件卸载/替换）调 ref.revoke()
+ */
+export interface BlobUrlRef {
+  url: string
+  revoke: () => void
+}
+
+/**
  * 附件 id → blob URL（二期就地渲染用，一期预留实现）
- * 调用方负责 URL.revokeObjectURL
+ * 返回带 revoke 的引用对象；调用方负责在不再需要时调用 revoke()
  */
 export async function imageToBlobUrl(
   attId: string
-): Promise<string | null> {
+): Promise<BlobUrlRef | null> {
   const data = await getAttachment(attId)
   if (!data) return null
   const type = (await getAttachmentType(attId)) || 'image/png'
   const blob = new Blob([data as unknown as BlobPart], { type })
-  return URL.createObjectURL(blob)
+  const url = URL.createObjectURL(blob)
+  return {
+    url,
+    revoke: () => URL.revokeObjectURL(url),
+  }
 }

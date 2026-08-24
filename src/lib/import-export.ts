@@ -58,20 +58,27 @@ function bytesFromBase64(base64: string): Uint8Array {
 
 async function collectAttachments(patterns: PatternRecord[]) {
   const seen = new Set<string>()
-  const attachments: ExportFile['attachments'] = []
+  const attIds: string[] = []
   for (const p of patterns) {
     for (const f of p.fragments) {
       for (const attId of scanAttachmentRefs(f.content)) {
         if (seen.has(attId)) continue
         seen.add(attId)
-        const data = await getAttachment(attId)
-        if (!data) continue
-        const mime = (await getAttachmentType(attId)) || 'application/octet-stream'
-        attachments.push({ id: attId, mime, data: base64FromBytes(data) })
+        attIds.push(attId)
       }
     }
   }
-  return attachments
+  const results = await Promise.all(
+    attIds.map(async (id) => {
+      const data = await getAttachment(id)
+      if (!data) return null
+      const mime = (await getAttachmentType(id)) || 'application/octet-stream'
+      return { id, mime, data: base64FromBytes(data) }
+    })
+  )
+  return results.filter(
+    (r): r is NonNullable<typeof r> => r !== null
+  )
 }
 
 export async function exportAllToFile(): Promise<string | null> {
@@ -167,29 +174,37 @@ export async function importFromFile(): Promise<{
   const categoryIds = new Set(existingCategories.map((c) => c._id))
 
   let categoriesImported = 0
-  for (const c of payload.categories) {
-    const doc: Category = { ...c }
-    if (categoryIds.has(doc._id)) {
-      doc._id = `${CATEGORY_PREFIX}${uuid()}`
-    }
-    if (await saveCategory(doc)) categoriesImported++
-  }
+  const categoryResults = await Promise.all(
+    payload.categories.map(async (c) => {
+      const doc: Category = { ...c }
+      if (categoryIds.has(doc._id)) {
+        doc._id = `${CATEGORY_PREFIX}${uuid()}`
+      }
+      return saveCategory(doc)
+    })
+  )
+  categoriesImported = categoryResults.filter(Boolean).length
 
   let patternsImported = 0
-  for (const p of payload.patterns) {
-    const doc: PatternRecord = { ...p }
-    if (patternIds.has(doc._id)) {
-      doc._id = `${PATTERN_PREFIX}${uuid()}`
-    }
-    if (await savePattern(doc)) patternsImported++
-  }
+  const patternResults = await Promise.all(
+    payload.patterns.map(async (p) => {
+      const doc: PatternRecord = { ...p }
+      if (patternIds.has(doc._id)) {
+        doc._id = `${PATTERN_PREFIX}${uuid()}`
+      }
+      return savePattern(doc)
+    })
+  )
+  patternsImported = patternResults.filter(Boolean).length
 
   let attachmentsImported = 0
-  for (const a of payload.attachments) {
-    const ok = await putAttachmentById(a.id, bytesFromBase64(a.data), a.mime)
-    if (ok) attachmentsImported++
-    // 附件 id 已存在（不可覆盖）→ 跳过，正文引用仍指向旧附件
-  }
+  const attachmentResults = await Promise.all(
+    payload.attachments.map((a) => {
+      // 附件 id 已存在（不可覆盖）→ 跳过，正文引用仍指向旧附件
+      return putAttachmentById(a.id, bytesFromBase64(a.data), a.mime)
+    })
+  )
+  attachmentsImported = attachmentResults.filter(Boolean).length
 
   return {
     patterns: patternsImported,

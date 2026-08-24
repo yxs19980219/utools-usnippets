@@ -280,6 +280,10 @@ export function SearchView() {
     [entries, query],
   )
 
+  // activeIndex 越界保护：渲染期钳制派生（列表变短时免除 effect 回写触发级联）
+  const clampedIndex =
+    filtered.length === 0 ? 0 : Math.min(activeIndex, filtered.length - 1)
+
   const empty = entries.length === 0
   const noMatch = !empty && filtered.length === 0
   // 内容高度随结果数自适应：空态 → 固定小高度；N 条 → N×49（视口 10 项封顶）
@@ -308,15 +312,6 @@ export function SearchView() {
     return (id: string | null) => (id ? map.get(id) : undefined)
   }, [categories])
 
-  // activeIndex 越界保护（列表变化 / query 过滤后）
-  useEffect(() => {
-    if (filtered.length === 0) {
-      setActiveIndex(0)
-    } else if (activeIndex >= filtered.length) {
-      setActiveIndex(filtered.length - 1)
-    }
-  }, [filtered.length, activeIndex])
-
   // 视口窗口：选中项越出可见范围时整体平移（视口固定 10 项可见，
   // 第 11 项滚入、第 1 项滚出，快捷键始终命中当前视口内条目）
   useEffect(() => {
@@ -325,19 +320,19 @@ export function SearchView() {
       return
     }
     setViewportStart((start) => {
-      if (activeIndex < start) return activeIndex
-      if (activeIndex >= start + VIEWPORT_COUNT) {
-        return Math.min(activeIndex - VIEWPORT_COUNT + 1, filtered.length - VIEWPORT_COUNT)
+      if (clampedIndex < start) return clampedIndex
+      if (clampedIndex >= start + VIEWPORT_COUNT) {
+        return Math.min(clampedIndex - VIEWPORT_COUNT + 1, filtered.length - VIEWPORT_COUNT)
       }
       return start
     })
-  }, [activeIndex, filtered.length])
+  }, [clampedIndex, filtered.length])
 
   // document 级键盘监听：焦点在 uTools 子输入框时页面仍能捕获按键（参照 uTools-Finder）
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (filtered.length === 0) return
-      const current = filtered[Math.min(activeIndex, filtered.length - 1)]
+      const current = filtered[clampedIndex]
       if (e.key === 'ArrowDown') {
         e.preventDefault()
         setActiveIndex((i) => Math.min(i + 1, filtered.length - 1))
@@ -361,7 +356,7 @@ export function SearchView() {
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [filtered, activeIndex, viewportStart])
+  }, [filtered, clampedIndex, viewportStart])
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
@@ -386,7 +381,7 @@ export function SearchView() {
                     entry={entry}
                     index={index}
                     query={query}
-                    active={activeIndex === index}
+                    active={clampedIndex === index}
                     categoryName={categoryNameById(entry.categoryId)}
                     viewportStart={viewportStart}
                     onHover={() => setActiveIndex(index)}

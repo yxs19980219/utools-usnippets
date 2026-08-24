@@ -35,9 +35,13 @@ export async function exportRecordImages(
   record: PatternRecord
 ): Promise<number | null> {
   const attIds: string[] = []
+  const seen = new Set<string>()
   for (const f of record.fragments) {
     for (const id of scanAttachmentRefs(f.content)) {
-      if (!attIds.includes(id)) attIds.push(id)
+      if (!seen.has(id)) {
+        seen.add(id)
+        attIds.push(id)
+      }
     }
   }
   if (attIds.length === 0) return 0

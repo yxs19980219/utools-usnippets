@@ -13,6 +13,7 @@ import {
   useEffect,
   useImperativeHandle,
   useRef,
+  useState,
   forwardRef,
 } from 'react'
 import { EditorView, keymap } from '@codemirror/view'
@@ -135,11 +136,13 @@ export const CodeBlock = forwardRef<CodeBlockHandle, CodeBlockProps>(
     const viewRef = useRef<EditorView | null>(null)
     const onChangeRef = useRef(onChange)
     const onPasteImageRef = useRef(onPasteImage)
-    const languageCompartment = useRef(new Compartment())
-    const themeCompartment = useRef(new Compartment())
+    const [languageCompartment] = useState(() => new Compartment())
+    const [themeCompartment] = useState(() => new Compartment())
 
-    onChangeRef.current = onChange
-    onPasteImageRef.current = onPasteImage
+    useEffect(() => {
+      onChangeRef.current = onChange
+      onPasteImageRef.current = onPasteImage
+    })
 
     useImperativeHandle(ref, () => ({
       insert(text) {
@@ -176,8 +179,8 @@ export const CodeBlock = forwardRef<CodeBlockHandle, CodeBlockProps>(
             indentWithTab,
           ]),
           highlightSelectionMatches(),
-          languageCompartment.current.of(languageExtension(language)),
-          themeCompartment.current.of(themeExtension(dark)),
+          languageCompartment.of(languageExtension(language)),
+          themeCompartment.of(themeExtension(dark)),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               onChangeRef.current(update.state.doc.toString())
@@ -233,20 +236,20 @@ export const CodeBlock = forwardRef<CodeBlockHandle, CodeBlockProps>(
     const view = viewRef.current
     if (!view) return
     view.dispatch({
-      effects: languageCompartment.current.reconfigure(
+      effects: languageCompartment.reconfigure(
         languageExtension(language)
       ),
     })
-  }, [language])
+  }, [language, languageCompartment])
 
   // 深色主题切换
   useEffect(() => {
     const view = viewRef.current
     if (!view) return
     view.dispatch({
-      effects: themeCompartment.current.reconfigure(themeExtension(dark)),
+      effects: themeCompartment.reconfigure(themeExtension(dark)),
     })
-  }, [dark])
+  }, [dark, themeCompartment])
 
   const handleClick = useCallback(() => {
     viewRef.current?.focus()

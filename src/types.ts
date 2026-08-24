@@ -57,9 +57,6 @@ export const CATEGORY_PREFIX = 'category/'
 /** 未分类哨兵（筛选语义，非真实分类 id） */
 export const UNCATEGORIZED = '__uncat__'
 
-/** 附件 id 前缀：pattern/<patternId>/img-<ts> */
-export const ATTACHMENT_PREFIX = 'pattern/'
-
 /** 附件引用正则：![](att://<id>)（捕获组含 att:// 前缀，由 resolveAttRef 剥离校验） */
 export const ATT_REF_RE = /!\[[^\]]*\]\((att:\/\/[^)]+)\)/g
 

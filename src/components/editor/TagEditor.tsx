@@ -39,8 +39,9 @@ export function TagEditor({
   const suggestions = useMemo(() => {
     const q = input.trim().toLowerCase()
     if (!q) return []
+    const tagSet = new Set(tags)
     return candidates.filter(
-      (t) => !tags.includes(t) && t.toLowerCase().includes(q)
+      (t) => !tagSet.has(t) && t.toLowerCase().includes(q)
     )
   }, [candidates, input, tags])
 

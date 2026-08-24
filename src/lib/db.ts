@@ -20,9 +20,13 @@ export async function loadPatterns(): Promise<PatternRecord[]> {
   try {
     const docs = await svc().db.allDocs(PATTERN_PREFIX)
     // 附件文档可能以 pattern/ 开头（如 pattern/<id>/img-<ts>），用 title 字段区分
-    return docs
-      .filter((d) => typeof d.title === 'string')
-      .map((d) => d as unknown as PatternRecord)
+    const patterns: PatternRecord[] = []
+    for (const d of docs) {
+      if (typeof d.title === 'string') {
+        patterns.push(d as unknown as PatternRecord)
+      }
+    }
+    return patterns
   } catch {
     return []
   }
@@ -57,9 +61,13 @@ export async function deletePattern(_id: string): Promise<boolean> {
 export async function loadCategories(): Promise<Category[]> {
   try {
     const docs = await svc().db.allDocs(CATEGORY_PREFIX)
-    return docs
-      .filter((d) => typeof d.name === 'string')
-      .map((d) => d as unknown as Category)
+    const categories: Category[] = []
+    for (const d of docs) {
+      if (typeof d.name === 'string') {
+        categories.push(d as unknown as Category)
+      }
+    }
+    return categories
   } catch {
     return []
   }
@@ -173,12 +181,4 @@ export function writeUserDataFile(
   content: string
 ): string | null {
   return svc().file.writeUserDataFile(filename, content)
-}
-
-// ---------------------------------------------------------------------------
-// 生命周期（preload 不可用时的降级提示）
-// ---------------------------------------------------------------------------
-
-export function servicesReady(): boolean {
-  return typeof window !== 'undefined' && !!window.services
 }

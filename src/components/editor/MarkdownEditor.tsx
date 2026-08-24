@@ -58,6 +58,7 @@ import '@atomic-editor/editor/styles.css'
 import { imageBlocks, imageBlocksRefreshEffect } from '@/lib/atomic/image-blocks'
 import { markdownFormatKeymap } from '@/lib/atomic/markdown-format'
 import {
+  type BlobUrlRef,
   imageToBlobUrl,
   resolveAttRef,
   scanAttachmentRefs,
@@ -134,10 +135,12 @@ export const MarkdownEditor = forwardRef<
   const onPasteImageRef = useRef(onPasteImage)
   // 图片 blob 预取 Map：扩展在 mount 时一次性捕获 resolver 闭包（引用此 ref），
   // Map 内容后续可增量更新，无需重建扩展
-  const blobMapRef = useRef(new Map<string, string>())
+  const blobMapRef = useRef(new Map<string, BlobUrlRef>())
 
-  onChangeRef.current = onChange
-  onPasteImageRef.current = onPasteImage
+  useEffect(() => {
+    onChangeRef.current = onChange
+    onPasteImageRef.current = onPasteImage
+  })
 
   useImperativeHandle(ref, () => ({
     insert(text) {
@@ -162,7 +165,7 @@ export const MarkdownEditor = forwardRef<
     const resolveImage = (src: string): string | null | undefined => {
       const attId = resolveAttRef(src)
       if (!attId) return undefined
-      return blobMapRef.current.get(attId) ?? null
+      return blobMapRef.current.get(attId)?.url ?? null
     }
 
     // uTools 环境链接走系统浏览器
@@ -258,8 +261,8 @@ export const MarkdownEditor = forwardRef<
       view.destroy()
       viewRef.current = null
       // 释放预取的 blob URL（记录切换/卸载时）
-      for (const url of blobMapRef.current.values()) {
-        URL.revokeObjectURL(url)
+      for (const ref of blobMapRef.current.values()) {
+        ref.revoke()
       }
       blobMapRef.current.clear()
     }
@@ -274,8 +277,14 @@ export const MarkdownEditor = forwardRef<
     if (missing.length === 0) return
     void Promise.all(
       missing.map(async (id) => {
-        const url = await imageToBlobUrl(id)
-        if (!cancelled && url) map.set(id, url)
+        const ref = await imageToBlobUrl(id)
+        if (!ref) return
+        // 正文再变/组件卸载（cancelled）时不可再入 map：立即释放，避免 URL 无 revoke 方
+        if (cancelled) {
+          ref.revoke()
+        } else {
+          map.set(id, ref)
+        }
       })
     ).then(() => {
       if (cancelled) return

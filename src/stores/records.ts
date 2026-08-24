@@ -154,13 +154,14 @@ export const useRecords = create<RecordsState>((set, get) => ({
     if (ids.length === 0) return
 
     const { records } = get()
-    let allOk = true
-    for (const id of ids) {
-      const record = records.find((r) => r._id === id)
-      if (!record) continue
-      const ok = await enqueue(() => savePattern(record))
-      if (!ok) allOk = false
-    }
+    const recordById = new Map(records.map((r) => [r._id, r] as const))
+    const targets = ids
+      .map((id) => recordById.get(id))
+      .filter((r): r is PatternRecord => r !== undefined)
+    const results = await Promise.all(
+      targets.map((record) => enqueue(() => savePattern(record)))
+    )
+    const allOk = results.every(Boolean)
     set({ saveState: allOk ? 'saved' : 'error' })
   },
 
@@ -199,11 +200,17 @@ export const useRecords = create<RecordsState>((set, get) => ({
 
     // 删除其正文引用的附件（孤儿清理，失败不阻塞删除）
     if (record) {
+      const attIds = new Set<string>()
       for (const f of record.fragments) {
         for (const attId of scanAttachmentRefs(f.content)) {
-          await enqueue(() => removeAttachment(attId)).catch(() => {})
+          attIds.add(attId)
         }
       }
+      await Promise.all(
+        [...attIds].map((attId) =>
+          enqueue(() => removeAttachment(attId)).catch(() => {})
+        )
+      )
     }
     await enqueue(() => deletePattern(id))
   },

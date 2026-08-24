@@ -1,7 +1,7 @@
 {
   "name": "pattern-vault",
   "private": true,
-  "version": "1.6.0",
+  "version": "1.6.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -29,7 +29,6 @@
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@lezer/common": "^1.5.2",
     "@lezer/highlight": "^1.2.3",
-    "@lezer/lr": "^1.4.10",
     "@radix-ui/react-context-menu": "^2.2.6",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
