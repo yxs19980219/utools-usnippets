@@ -27,6 +27,8 @@ export interface PatternRecord {
   tags: string[]
   /** 收藏（库视图"收藏"筛选） */
   favorite: boolean
+  /** 置顶时间戳（ms）；null/undefined = 未置顶，后置顶优先级更高 */
+  pinnedAt?: number | null
   /** 软删除（回收站视图；真正删除仅发生在回收站内） */
   deleted: boolean
   createdAt: number
@@ -40,6 +42,8 @@ export interface Category {
   _rev?: string
   name: string
   order: number
+  /** 置顶时间戳（ms）；null/undefined = 未置顶，后置顶优先级更高 */
+  pinnedAt?: number | null
   /** 默认片段语言（该文件夹视图下新建片段的语言；缺省时继承全局默认） */
   defaultLanguage?: string
   createdAt: number

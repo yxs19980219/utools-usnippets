@@ -46,6 +46,8 @@ interface RecordsState {
   deleteForever: (id: string) => Promise<void>
   /** 收藏/取消收藏（立即落库） */
   toggleFavorite: (id: string) => Promise<void>
+  /** 置顶/取消置顶 toggle（立即落库，后置顶优先级更高） */
+  togglePin: (id: string) => Promise<void>
   /** 移动记录到分类（即时落库，不防抖） */
   moveRecord: (id: string, categoryId: string | null) => Promise<void>
   /** 删除分类时，将其下所有记录移入回收站（软删除，分类归属清空供恢复落收件箱） */
@@ -79,10 +81,11 @@ export const useRecords = create<RecordsState>((set, get) => ({
 
   load: async () => {
     const records = await loadPatterns()
-    // 归一化：旧数据可能缺少 favorite/deleted 字段
+    // 归一化：旧数据可能缺少 favorite/deleted/pinnedAt 字段
     for (const r of records) {
       if (r.favorite === undefined) r.favorite = false
       if (r.deleted === undefined) r.deleted = false
+      if (r.pinnedAt === undefined) r.pinnedAt = null
     }
     records.sort((a, b) => b.updatedAt - a.updatedAt)
     set({ records, loaded: true, saveState: 'idle' })
@@ -210,6 +213,17 @@ export const useRecords = create<RecordsState>((set, get) => ({
     const record = records.find((r) => r._id === id)
     if (!record) return
     record.favorite = !record.favorite
+    record.updatedAt = Date.now()
+    set({ records: [...records] })
+    await enqueue(() => savePattern(record))
+  },
+
+  /** 置顶/取消置顶 toggle：后置顶时间戳更新，多置顶按时间倒序 */
+  togglePin: async (id) => {
+    const { records } = get()
+    const record = records.find((r) => r._id === id)
+    if (!record) return
+    record.pinnedAt = record.pinnedAt ? null : Date.now()
     record.updatedAt = Date.now()
     set({ records: [...records] })
     await enqueue(() => savePattern(record))

@@ -7,13 +7,14 @@
  * - 标签：标签云（点击筛选）
  * 全局搜索态下左栏失效（视觉淡化 + 禁交互）
  */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { HTMLAttributes } from 'react'
 import {
   CheckIcon,
   FolderIcon,
   InboxIcon,
   PencilIcon,
+  PinIcon,
   PlusIcon,
   SettingsIcon,
   StarIcon,
@@ -25,7 +26,7 @@ import { useCategories } from '@/stores/categories'
 import { useRecords } from '@/stores/records'
 import { useUi } from '@/stores/ui'
 import { useToast } from '@/lib/toast'
-import { tagCloud } from '@/lib/search'
+import { sortCategories, tagCloud } from '@/lib/search'
 import { SNIPPET_LANGUAGES } from '@/lib/languages'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
@@ -84,6 +85,7 @@ export function Sidebar() {
   const createCategory = useCategories((s) => s.create)
   const renameCategory = useCategories((s) => s.rename)
   const setDefaultLanguage = useCategories((s) => s.setDefaultLanguage)
+  const togglePinCategory = useCategories((s) => s.togglePin)
   const removeCategory = useCategories((s) => s.remove)
   const removeTagFromAll = useRecords((s) => s.removeTagFromAll)
   const records = useRecords((s) => s.records)
@@ -108,6 +110,11 @@ export function Sidebar() {
   const favoriteCount = live.filter((r) => r.favorite).length
   const trashCount = records.filter((r) => r.deleted).length
   const cloud = tagCloud(live)
+  // 分类渲染顺序：置顶优先（后置顶在前），未置顶按 order
+  const sortedCategories = useMemo(
+    () => sortCategories(categories),
+    [categories]
+  )
 
   const isView = (type: 'all' | 'inbox' | 'favorites' | 'trash') =>
     view.type === type
@@ -244,7 +251,7 @@ export function Sidebar() {
         )}
 
         {/* 未分类记录收编进库组"收件箱"，此处仅渲染用户自建分类 */}
-        {categories.map((cat) =>
+        {sortedCategories.map((cat) =>
           renamingId === cat._id ? (
             <div key={cat._id} className="flex items-center gap-1 px-2 py-0.5">
               <Input
@@ -274,13 +281,25 @@ export function Sidebar() {
                   title="点击筛选，右键管理，可拖入记录"
                 >
                   <FolderIcon className="size-3.5 shrink-0 text-muted-foreground" />
-                  <span className="min-w-0 flex-1 truncate">{cat.name}</span>
+                  <span
+                    className={cn(
+                      'min-w-0 flex-1 truncate',
+                      cat.pinnedAt && 'font-medium text-amber-500 dark:text-amber-400'
+                    )}
+                  >
+                    {cat.name}
+                  </span>
                   <span className="text-xs text-muted-foreground">
                     {live.filter((r) => r.categoryId === cat._id).length}
                   </span>
                 </NavRow>
               </ContextMenuTrigger>
               <ContextMenuContent>
+                <ContextMenuItem
+                  onClick={() => void togglePinCategory(cat._id)}
+                >
+                  <PinIcon /> {cat.pinnedAt ? '取消置顶' : '置顶'}
+                </ContextMenuItem>
                 <ContextMenuItem
                   onClick={() => {
                     setRenamingId(cat._id)

@@ -14,6 +14,7 @@ import {
   FileImageIcon,
   FileTextIcon,
   FolderInputIcon,
+  PinIcon,
   PlusIcon,
   RotateCcwIcon,
   SearchIcon,
@@ -115,6 +116,7 @@ function ListItem({
   const categories = useCategories((s) => s.categories)
   const moveRecord = useRecords((s) => s.moveRecord)
   const toggleFavorite = useRecords((s) => s.toggleFavorite)
+  const togglePin = useRecords((s) => s.togglePin)
   const restoreFromTrash = useRecords((s) => s.restoreFromTrash)
   const toast = useToast((s) => s.show)
   const [confirmForever, setConfirmForever] = useState(false)
@@ -155,7 +157,12 @@ function ListItem({
               ) : (
                 <Code2Icon className="size-3 shrink-0 text-muted-foreground" />
               )}
-              <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+              <span
+                className={cn(
+                  'min-w-0 flex-1 truncate text-[13px] font-medium',
+                  record.pinnedAt && 'text-amber-500 dark:text-amber-400'
+                )}
+              >
                 {record.title || '未命名'}
               </span>
             </div>
@@ -191,6 +198,9 @@ function ListItem({
                 onClick={() => void toggleFavorite(record._id)}
               >
                 <StarIcon /> {record.favorite ? '取消收藏' : '收藏'}
+              </ContextMenuItem>
+              <ContextMenuItem onClick={() => void togglePin(record._id)}>
+                <PinIcon /> {record.pinnedAt ? '取消置顶' : '置顶'}
               </ContextMenuItem>
               <ContextMenuSub>
                 <ContextMenuSubTrigger>

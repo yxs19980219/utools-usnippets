@@ -2,7 +2,7 @@
  * lib/search.ts —— 纯函数过滤（标题/场景/标签/正文全文，小写 includes）
  * 记录级：filterPatterns（主界面列表）；片段级：buildSnippetEntries/filterSnippets（搜索视图）
  */
-import type { PatternRecord } from '../types'
+import type { Category, PatternRecord } from '../types'
 import { UNCATEGORIZED, isNote } from '../types'
 
 /** 片段搜索视图的列表条目（一个代码片段 = 一条） */
@@ -117,9 +117,26 @@ export function filterPatterns(
   })
 }
 
-/** 列表排序：最近修改优先 */
+/** 列表排序：置顶优先（组内后置顶在前），其余按最近修改优先 */
 export function sortByRecent(records: PatternRecord[]): PatternRecord[] {
-  return [...records].sort((a, b) => b.updatedAt - a.updatedAt)
+  const pinned = records
+    .filter((r) => r.pinnedAt)
+    .sort((a, b) => (b.pinnedAt ?? 0) - (a.pinnedAt ?? 0))
+  const rest = records
+    .filter((r) => !r.pinnedAt)
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+  return [...pinned, ...rest]
+}
+
+/** 分类排序：置顶优先（组内后置顶在前），其余按 order 升序 */
+export function sortCategories(categories: Category[]): Category[] {
+  const pinned = categories
+    .filter((c) => c.pinnedAt)
+    .sort((a, b) => (b.pinnedAt ?? 0) - (a.pinnedAt ?? 0))
+  const rest = categories
+    .filter((c) => !c.pinnedAt)
+    .sort((a, b) => a.order - b.order)
+  return [...pinned, ...rest]
 }
 
 /** 标签云：全库扫描去重计数 */

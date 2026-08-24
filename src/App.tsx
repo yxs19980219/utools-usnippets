@@ -57,28 +57,35 @@ export default function App() {
     }
   }, [])
 
-  // 入口路由 + uTools 子输入框搜索（design：搜索用 uTools 搜索接口，非插件内搜索）
+  // 入口路由：onPluginEnter 只切换视图（子输入框注册统一走下方渲染 effect，
+  // 避免"回调时刻 setSubInput 被 SearchView 卸载 cleanup 清除"的竞态）
   useEffect(() => {
     const ut = window.utools
     ut?.onPluginEnter?.((action) => {
       setEnterCode(action.code)
-      console.log('[pattern-vault] enter', action.code)
-      if (action.code === 'pattern-vault-search') {
-        // 片段搜索视图：SearchView 自己注册/移除顶部 uTools 子输入框
-        ut.removeSubInput?.()
-        return
-      }
-      // 窗口高度不干预：默认 800×600（plugin.json），用户手动拉伸后由 uTools 记忆
-      ut.setSubInput?.(
-        ({ text }) => useUi.getState().setSearchQuery(text),
-        '搜索模式库：标题、备注、标签、正文',
-        true,
-      )
+      // 片段搜索视图：SearchView 自己注册/移除顶部 uTools 子输入框
     })
     ut?.onPluginOut?.(() => {
       ut.removeSubInput?.()
     })
   }, [])
+
+  // 主界面子输入框（uTools 搜索接口，非插件内搜索）：
+  // 依赖 enterCode 的渲染 effect —— React 保证 SearchView 卸载 cleanup（removeSubInput）
+  // 先于本 effect 执行，两视图往返切换输入框不丢失
+  useEffect(() => {
+    const ut = window.utools
+    if (!ut?.setSubInput) return
+    if (enterCode === 'pattern-vault-search') return // 搜索视图自管
+    ut.setSubInput?.(
+      ({ text }) => useUi.getState().setSearchQuery(text),
+      '搜索模式库：标题、备注、标签、正文',
+      true,
+    )
+    return () => {
+      ut.removeSubInput?.()
+    }
+  }, [enterCode])
 
   const collapsed = useUi((s) => s.sidebarCollapsed)
 

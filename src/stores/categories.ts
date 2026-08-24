@@ -21,6 +21,8 @@ interface CategoriesState {
   rename: (id: string, name: string) => Promise<boolean>
   setDefaultLanguage: (id: string, language: string) => Promise<boolean>
   remove: (id: string) => Promise<void>
+  /** 置顶/取消置顶 toggle（立即落库，后置顶优先级更高） */
+  togglePin: (id: string) => Promise<boolean>
 }
 
 export const useCategories = create<CategoriesState>((set, get) => ({
@@ -29,6 +31,10 @@ export const useCategories = create<CategoriesState>((set, get) => ({
 
   load: async () => {
     const categories = await loadCategories()
+    // 归一化：旧数据可能缺少 pinnedAt 字段
+    for (const c of categories) {
+      if (c.pinnedAt === undefined) c.pinnedAt = null
+    }
     categories.sort((a, b) => a.order - b.order)
     set({ categories, loaded: true })
   },
@@ -77,5 +83,16 @@ export const useCategories = create<CategoriesState>((set, get) => ({
     const ok = await deleteCategory(id)
     if (!ok) return
     set({ categories: get().categories.filter((c) => c._id !== id) })
+  },
+
+  togglePin: async (id) => {
+    const cat = get().categories.find((c) => c._id === id)
+    if (!cat) return false
+    cat.pinnedAt = cat.pinnedAt ? null : Date.now()
+    cat.updatedAt = Date.now()
+    const ok = await saveCategory(cat)
+    if (!ok) return false
+    set({ categories: [...get().categories] })
+    return true
   },
 }))
