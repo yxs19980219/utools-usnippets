@@ -141,8 +141,8 @@ function highlight(text: string, query: string): ReactNode {
 /** 视口固定 10 项；单条固定高度（行 1 22px + 行 2 17px + padding 10px） */
 const VIEWPORT_COUNT = 10
 const ITEM_HEIGHT = 49
-/** 内容视口固定高度 = 列表项高 × 10 */
-const VIEWPORT_HEIGHT = VIEWPORT_COUNT * ITEM_HEIGHT
+/** 空态（无片段/无匹配）时窗口高度 */
+const EMPTY_HEIGHT = 96
 /** 主界面窗口高度（plugin.json height），退出搜索时恢复 */
 const MAIN_WINDOW_HEIGHT = 600
 
@@ -280,14 +280,22 @@ export function SearchView() {
     [entries, query],
   )
 
-  // 窗口高度：进入搜索 = 内容视口(490)，卸载恢复主界面(600)。
-  // 单窗口机制下 600↔490 是必然的一次性高度切换（用户已确认接受）
+  const empty = entries.length === 0
+  const noMatch = !empty && filtered.length === 0
+  // 内容高度随结果数自适应：空态 → 固定小高度；N 条 → N×49（视口 10 项封顶）
+  const contentHeight = empty || noMatch
+    ? EMPTY_HEIGHT
+    : Math.min(filtered.length, VIEWPORT_COUNT) * ITEM_HEIGHT
+
+  // 窗口高度：进入搜索 = 内容高度（结果数变化时动态扩缩），卸载恢复主界面(600)。
+  // 单窗口机制下 600↔内容高 是必然的一次性高度切换（用户已确认接受）。
+  // 动态 effect 与卸载恢复分离：contentHeight 变化时不得先回弹 600（历史跳变教训）
   useEffect(() => {
-    const utools = window.utools
-    if (!utools?.setExpendHeight) return
-    utools.setExpendHeight(VIEWPORT_HEIGHT)
+    window.utools?.setExpendHeight?.(contentHeight)
+  }, [contentHeight])
+  useEffect(() => {
     return () => {
-      utools.setExpendHeight?.(MAIN_WINDOW_HEIGHT)
+      window.utools?.setExpendHeight?.(MAIN_WINDOW_HEIGHT)
     }
   }, [])
 
@@ -355,9 +363,6 @@ export function SearchView() {
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [filtered, activeIndex, viewportStart])
 
-  const empty = entries.length === 0
-  const noMatch = !empty && filtered.length === 0
-
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
       <div className="flex min-h-0 flex-1 items-start overflow-hidden">
@@ -366,10 +371,10 @@ export function SearchView() {
             {empty ? '还没有可复制的代码片段' : '没有匹配的片段'}
           </div>
         ) : (
-          /* 内容视口固定（10 项 × 49px）：顶部对齐、拉伸不变，窗口随选中切换 */
+          /* 内容视口自适应（N 条 × 49px，10 项封顶）：顶部对齐、窗口随结果数扩缩 */
           <div
             className="w-full overflow-hidden"
-            style={{ height: VIEWPORT_HEIGHT }}
+            style={{ height: contentHeight }}
           >
             {filtered
               .slice(viewportStart, viewportStart + VIEWPORT_COUNT)
