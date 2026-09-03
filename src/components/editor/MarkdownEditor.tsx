@@ -34,6 +34,7 @@ import {
   LanguageSupport,
   StreamLanguage,
   indentOnInput,
+  syntaxTree,
 } from '@codemirror/language'
 import {
   markdown,
@@ -73,6 +74,41 @@ import {
 // codemirror-live-markdown 的 renderMath 从 window.katex 读 KaTeX（不 import）。
 // katex 包已自带 Window.katex 全局声明，此处只需运行时注入
 ;(window as unknown as { katex?: unknown }).katex = katex
+
+/**
+ * 点击 math widget（渲染态公式）→ 把光标移入公式源码位置，
+ * 触发 blockMathField 重建为源码态（不然 CM6 会把光标吸在块外、
+ * 点击永远进不了编辑态，且拖选起点被块边界截断）。
+ */
+const mathWidgetClickHandler = EditorView.domEventHandlers({
+  click(event, view) {
+    const target = event.target as HTMLElement
+    const widgetEl = target.closest('.cm-math-block, .cm-math-inline')
+    if (!widgetEl) return
+    const pos = view.posAtDOM(widgetEl)
+    const line = view.state.doc.lineAt(pos)
+    let targetPos = -1
+    syntaxTree(view.state).iterate({
+      enter: (n) => {
+        if (n.name !== 'FencedCode') return
+        const info = n.node.getChild('CodeInfo')
+        if (
+          info &&
+          view.state.doc.sliceString(info.from, info.to) === 'math' &&
+          n.from <= line.from &&
+          n.to >= line.to
+        ) {
+          targetPos = n.from + 1
+        }
+      },
+    })
+    if (targetPos >= 0) {
+      event.preventDefault()
+      view.dispatch({ selection: { anchor: targetPos, head: targetPos } })
+      view.focus()
+    }
+  },
+})
 
 /** 代码块内嵌高亮语言（仅一期已装的语言包，惰性加载） */
 const CODE_LANGUAGES = [
@@ -237,6 +273,8 @@ export const MarkdownEditor = forwardRef<
           mouseSelectingField,
           mathPlugin,
           blockMathField,
+          // 点击渲染态公式块 → 光标进源码触发源码态（否则点击永远进不了编辑）
+          mathWidgetClickHandler,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               onChangeRef.current(update.state.doc.toString())
