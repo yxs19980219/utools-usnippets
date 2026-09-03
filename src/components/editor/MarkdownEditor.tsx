@@ -51,7 +51,13 @@ import {
   startAsteriskList,
   tables,
 } from '@atomic-editor/editor'
-import { blockMathField, mathPlugin } from 'codemirror-live-markdown'
+import {
+  blockMathField,
+  collapseOnSelectionFacet,
+  mathPlugin,
+  mouseSelectingField,
+  setMouseSelecting,
+} from 'codemirror-live-markdown'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 import '@atomic-editor/editor/styles.css'
@@ -225,6 +231,10 @@ export const MarkdownEditor = forwardRef<
           imageBlocks({ resolve: resolveImage }),
           inlinePreview({ onLinkClick: openLink }),
           // 行内 $...$ 与 ```math 块级公式（KaTeX 渲染）
+          // live-md 核心配套：光标进入块内显示源码（否则 widget 永久抢占渲染、
+          // 无法编辑——应先配置 collapseOnSelectionFacet + mouseSelectingField）
+          collapseOnSelectionFacet.of(true),
+          mouseSelectingField,
           mathPlugin,
           blockMathField,
           EditorView.updateListener.of((update) => {
@@ -256,8 +266,23 @@ export const MarkdownEditor = forwardRef<
     }
     view.dom.addEventListener('paste', handlePaste)
 
+    // 拖选状态跟踪（live-md 配套：mousedown 置 true，mouseup 后释放）：
+    // mouseSelectingField 为 true 时 math 插件保留源码渲染，避免拖选透视 widget
+    const handleMouseDown = () => {
+      view.dispatch({ effects: setMouseSelecting.of(true) })
+    }
+    const handleMouseUp = () => {
+      requestAnimationFrame(() => {
+        view.dispatch({ effects: setMouseSelecting.of(false) })
+      })
+    }
+    view.contentDOM.addEventListener('mousedown', handleMouseDown)
+    document.addEventListener('mouseup', handleMouseUp)
+
     return () => {
       view.dom.removeEventListener('paste', handlePaste)
+      view.contentDOM.removeEventListener('mousedown', handleMouseDown)
+      document.removeEventListener('mouseup', handleMouseUp)
       view.destroy()
       viewRef.current = null
       // 释放预取的 blob URL（记录切换/卸载时）
